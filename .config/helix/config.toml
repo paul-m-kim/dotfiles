@@ -1,0 +1,5 @@
+theme = "bogster"
+
+[editor]
+true-color = true
+
