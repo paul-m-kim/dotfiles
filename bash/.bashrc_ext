@@ -1,0 +1,18 @@
+#!/bin/bash
+
+DOT_DIR_DOWNLOADS=$HOME/downloads
+DOT_DIR_BIN=$HOME/bin
+
+if [ ! -d "$DOT_DIR_DOWNLOADS" ]; then
+  mkdir -p $DOT_DIR_DOWNLOADS
+fi
+
+if [ ! -d "$DOT_DIR_BIN" ]; then
+  mkdir -p $DOT_DIR_BIN
+fi
+
+case ":$PATH:" in
+  *":$DOT_DIR_BIN:"*) : ;;
+  *) PATH="$DOT_DIR_BIN:$PATH" ;;
+esac
+

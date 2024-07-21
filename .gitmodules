@@ -1,3 +1,7 @@
 [submodule ".config/nvim"]
 	path = nvim/.config/nvim
 	url = https://github.com/paul-m-kim/kickstart-modular.nvim.git
+[submodule "asdf/.asdf"]
+	path = asdf/.asdf
+	url = https://github.com/asdf-vm/asdf.git
+	branch = v0.14.0
