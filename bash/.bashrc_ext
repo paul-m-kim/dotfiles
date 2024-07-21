@@ -2,6 +2,7 @@
 
 DOT_DIR_DOWNLOADS=$HOME/downloads
 DOT_DIR_BIN=$HOME/bin
+DOT_DIR_APPS=$HOME/apps
 
 if [ ! -d "$DOT_DIR_DOWNLOADS" ]; then
   mkdir -p $DOT_DIR_DOWNLOADS
@@ -11,8 +12,13 @@ if [ ! -d "$DOT_DIR_BIN" ]; then
   mkdir -p $DOT_DIR_BIN
 fi
 
-case ":$PATH:" in
-  *":$DOT_DIR_BIN:"*) : ;;
-  *) PATH="$DOT_DIR_BIN:$PATH" ;;
-esac
+if [ ! -d "$DOT_DIR_APPS" ]; then
+  mkdir -p $DOT_DIR_APPS
+fi
+
+# Already done in builtin .profile
+# case ":$PATH:" in
+#   *":$DOT_DIR_BIN:"*) : ;;
+#   *) PATH="$DOT_DIR_BIN:$PATH" ;;
+# esac
 
