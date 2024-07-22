@@ -16,7 +16,7 @@ elixir_buihd="1.17.2-otp-27"
 
 source $DIR_SCRIPTS/erlang_deps.sh
 asdf plugin add erlang
-asdf install erlang $erlang_build
+export KERL_BUILD_DOCS=yes && asdf install erlang $erlang_build
 asdf global erlang $erlang_build
 
 asdf plugin add elixir
