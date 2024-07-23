@@ -3,3 +3,6 @@ theme = "bogster"
 [editor]
 true-color = true
 
+[editor.file-picker]
+hidden = false
+
