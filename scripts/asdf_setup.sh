@@ -2,8 +2,8 @@
 
 DIR_SCRIPTS=$(dirname $0)
 FILE='$HOME/.bashrc'
-declare -a LINES_IN_BASH RC=('. "$HOME/.asdf/asdf.sh"'
-                             '. "$HOME/.asdf/completions/asdf.bash"')
+declare -a LINES_IN_BASHRC=('. "$HOME/.asdf/asdf.sh"'
+                            '. "$HOME/.asdf/completions/asdf.bash"')
 
 # The quotes around the array is important - otherwise it will iterate for every space in the string
 for LINE in "${LINES_IN_BASHRC[@]}"

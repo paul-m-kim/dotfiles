@@ -4,6 +4,7 @@ ERLANG_BUILD_DEPS="build-essential \
                    autoconf \
                    m4 \
                    libncurses-dev \
+                   libncurses5-dev \
                    libwxgtk3.2-dev \
                    libwxgtk-webview3.2-dev \
                    libgl1-mesa-dev \

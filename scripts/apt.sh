@@ -2,7 +2,8 @@
 
 NEOVIM_DEPS="neovim \
              ripgrep \
-             fd-file" 
+             fd-file \ 
+             python3-venv" 
 
 sudo apt update
 sudo apt install -y $NEOVIM_DEPS 
