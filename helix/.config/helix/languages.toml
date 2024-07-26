@@ -17,3 +17,12 @@ args = ["--ignore", "E501"]
 command = "black"
 args = ["--line-length", "88", "--quiet", "-"]
 
+# https://rust-analyzer.github.io/manual.html
+[language-server.rust-analyzer.config.check]
+command = "clippy"
+
+[[language]]
+name = "go"
+auto-format = true
+formatter = { command = "goimports" }
+
