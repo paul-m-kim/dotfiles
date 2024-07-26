@@ -43,5 +43,5 @@ go install github.com/nametake/golangci-lint-langserver@latest
 
 for PACKAGE in "${!GOLANG_PACKAGES[@]}"
 do
-  ln -s $GOPATH/bin/${PACKAGE} ${DOT_DIR_BIN}/${GOLANG_PACKAGES[$PACKAGE]}
+  ln -s $GOPATH/bin/${PACKAGE} ${DOT_DIR_BIN}/${GOLANG_PACKAGES[${PACKAGE}]}
 done
