@@ -26,3 +26,7 @@ name = "go"
 auto-format = true
 formatter = { command = "goimports" }
 
+[[language]]
+name = "elixir"
+auto-format = true
+formatter = { command = "mix", args = ["format", "-"] }
