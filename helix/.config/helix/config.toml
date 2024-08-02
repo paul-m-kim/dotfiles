@@ -2,7 +2,14 @@ theme = "bogster"
 
 [editor]
 true-color = true
+color-modes = true
+
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-type", "read-only-indicator", "file-modification-indicator"]
+right = ["diagnostics", "separator", "spacer", "version-control", "spacer", "separator", "selections", "position", "file-encoding", "separator", "file-line-ending"]
 
 [editor.file-picker]
 hidden = false
 
+[editor.indent-guides]
+render = true
