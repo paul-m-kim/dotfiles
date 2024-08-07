@@ -3,5 +3,5 @@
 sudo apt update
 sudo apt install -y nodejs npm
 
-sudo npm install -g pyright
+sudo npm install -g pyright bash-language-server
 
