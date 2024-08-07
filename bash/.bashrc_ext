@@ -22,3 +22,13 @@ fi
 #   *) PATH="$DOT_DIR_BIN:$PATH" ;;
 # esac
 
+# Non-Default Environment Variables
+# Rust
+DOT_DIR_CARGO=${DOT_DIR_APPS}/cargo
+DOT_DIR_RUSTUP=${DOT_DIR_APPS}/rustup
+export RUSTUP_HOME=${DOT_DIR_RUSTUP}
+export CARGO_HOME=${DOT_DIR_CARGO}
+
+# Go
+# https://go.dev/wiki/GOPATH
+export GOPATH=${DOT_DIR_APPS}/go
