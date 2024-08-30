@@ -4,9 +4,6 @@
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 . ${SCRIPTPATH}/../bash/.bashrc_ext
 
-export RUSTUP_HOME=${DOT_DIR_RUSTUP}
-export CARGO_HOME=${DOT_DIR_CARGO}
-
 declare -a RUST_APPS=('cargo'
                       'rustc'
                       'rustup')
