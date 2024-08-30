@@ -1,10 +1,8 @@
 #!/bin/bash
 
-DOT_DIR_DOWNLOADS=$HOME/downloads
-DOT_DIR_BIN=$HOME/bin
-DOT_DIR_APPS=$HOME/apps
-DOT_DIR_CARGO=${DOT_DIR_APPS}/cargo
-DOT_DIR_RUSTUP=${DOT_DIR_APPS}/rustup
+# environment variables
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+. ${SCRIPTPATH}/../bash/.bashrc_ext
 
 export RUSTUP_HOME=${DOT_DIR_RUSTUP}
 export CARGO_HOME=${DOT_DIR_CARGO}

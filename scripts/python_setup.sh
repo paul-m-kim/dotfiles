@@ -1,8 +1,9 @@
 #!/bin/bash
 
-DOT_DIR_DOWNLOADS=$HOME/downloads
-DOT_DIR_BIN=$HOME/bin
-DOT_DIR_APPS=$HOME/apps
+# environment variables
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+. ${SCRIPTPATH}/../bash/.bashrc_ext
+
 DOT_DIR_PYTHON_VENV=${DOT_DIR_APPS}/python
 declare -a PIP_PACKAGES=('ruff-lsp' \
                          'black')
