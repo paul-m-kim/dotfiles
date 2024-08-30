@@ -24,6 +24,7 @@ fi
 
 # Non-Default Environment Variables
 # Rust
+# https://doc.rust-lang.org/cargo/reference/environment-variables.html
 DOT_DIR_CARGO=${DOT_DIR_APPS}/cargo
 DOT_DIR_RUSTUP=${DOT_DIR_APPS}/rustup
 export RUSTUP_HOME=${DOT_DIR_RUSTUP}
