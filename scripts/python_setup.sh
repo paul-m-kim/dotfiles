@@ -18,5 +18,3 @@ do
   ln -s ${DOT_DIR_PYTHON_VENV}/bin/${_package} ${DOT_DIR_BIN}/${_package}
 done
 
-unset -v DOT_DIR_PYTHON_VENV PIP_PACKAGES _package
-
