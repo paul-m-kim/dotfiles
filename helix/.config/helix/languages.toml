@@ -41,3 +41,8 @@ validation = true
 [language-server.yaml-language-server.config.yaml.schemas]
 "https://raw.githubusercontent.com/ansible-community/schemas/main/f/ansible-tasks.json" = "roles/{tasks,handlers}/*.{yml,yaml}"
 
+[[language]]
+name = "bash"
+auto-format = true
+formatter = { command = "shfmt", args = ["-i", "2", "-ci"] }
+
