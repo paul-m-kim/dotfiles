@@ -8,20 +8,19 @@ print_help() {
   # https://en.wikipedia.org/wiki/Usage_message
   echo "==========="
   echo "           "
-  echo "- dir_downloads           "
-  echo "- dir_apps           "
-  echo "- dir_bin           "
-  echo "- zig_ver           "
+  echo "           "
+  echo "           "
+  echo "           "
   echo "==========="
 
 }
 
 # constants
-NUM_POS_ARGS=3
-NUM_OPT_ARGS=1
+NUM_POS_ARGS=0
+NUM_OPT_ARGS=0
 NUM_OPT_FLAGS=0
 
-declare -A DEPENDENCIES=(["wget"]="wget")
+declare -A DEPENDENCIES=(["echo"]="echo")
 
 # runtime
 path_this_script=${0}
@@ -41,21 +40,13 @@ if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_
 fi
 
 # positional
-dir_downloads=$1
-dir_apps=$2
-dir_bin=$3
 shift ${NUM_POS_ARGS}
 
 # optional - defaults
-zig_ver="0.14.0"
 
 # optional
 while (($# > 0)); do
   case $1 in
-    -r | --version)
-      zig_ver=$2
-      shift 2
-      ;;
     *)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
@@ -84,9 +75,5 @@ for cmd in "${!DEPENDENCIES[@]}"; do
 done
 
 # business
-wget -nc -P ${dir_downloads}/ https://ziglang.org/download/${zig_ver}/zig-linux-x86_64-${zig_ver}.tar.xz
-tar -C ${dir_apps} -xf ${dir_downloads}/zig-linux-x86_64-${zig_ver}.tar.xz
-rm ${dir_bin}/zig
-ln -s ${dir_apps}/zig-linux-x86_64-${zig_ver}/zig ${dir_bin}/zig
 
 echo "[info] success"
