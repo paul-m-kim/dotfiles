@@ -1,21 +1,28 @@
 #!/bin/bash
 
-DOT_DIR_DOWNLOADS=$HOME/downloads
-DOT_DIR_BIN=$HOME/bin
-DOT_DIR_APPS=$HOME/apps
+# Create parent directories
+DIR_DOWNLOADS=$HOME/downloads
+DIR_BIN=$HOME/bin
+DIR_APPS=$HOME/apps
+DIR_DOTFILES=$HOME/dotfiles
 
-if [ ! -d "$DOT_DIR_DOWNLOADS" ]; then
-  mkdir -p $DOT_DIR_DOWNLOADS
+if [ ! -d "$DIR_DOWNLOADS" ]; then
+  mkdir -p "$DIR_DOWNLOADS"
 fi
 
-if [ ! -d "$DOT_DIR_BIN" ]; then
-  mkdir -p $DOT_DIR_BIN
+if [ ! -d "$DIR_BIN" ]; then
+  mkdir -p "$DIR_BIN"
 fi
 
-if [ ! -d "$DOT_DIR_APPS" ]; then
-  mkdir -p $DOT_DIR_APPS
+if [ ! -d "$DIR_APPS" ]; then
+  mkdir -p "$DIR_APPS"
 fi
 
+if [ ! -d "$DIR_DOTFILES" ]; then
+  mkdir -p "$DIR_DOTFILES"
+fi
+
+# Add bin directory to PATH
 # Already done in builtin .profile
 # case ":$PATH:" in
 #   *":$DOT_DIR_BIN:"*) : ;;
@@ -23,13 +30,8 @@ fi
 # esac
 
 # Non-Default Environment Variables
-# Rust
-# https://doc.rust-lang.org/cargo/reference/environment-variables.html
-DOT_DIR_CARGO=${DOT_DIR_APPS}/cargo
-DOT_DIR_RUSTUP=${DOT_DIR_APPS}/rustup
-export RUSTUP_HOME=${DOT_DIR_RUSTUP}
-export CARGO_HOME=${DOT_DIR_CARGO}
+. "${DIR_DOTFILES}"/scripts/rust_env.sh "${DIR_DOWNLOADS}" "${DIR_APPS}" "${DIR_BIN}"
+. "${DIR_DOTFILES}"/scripts/go_env.sh "${DIR_DOWNLOADS}" "${DIR_APPS}" "${DIR_BIN}"
 
-# Go
-# https://go.dev/wiki/GOPATH
-export GOPATH=${DOT_DIR_APPS}/go
+# Preload apps
+eval "$(~/bin/oh-my-posh init bash)"

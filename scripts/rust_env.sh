@@ -17,10 +17,8 @@ print_help() {
 
 # constants
 NUM_POS_ARGS=3
-NUM_OPT_ARGS=1
+NUM_OPT_ARGS=0
 NUM_OPT_FLAGS=0
-
-declare -A DEPENDENCIES=(["echo"]="echo")
 
 # runtime
 path_this_script=${0}
@@ -53,40 +51,16 @@ dir_bin=$(readlink --canonicalize "${3}")
 shift ${NUM_POS_ARGS}
 
 # optional - defaults
-download_deps=false
 
 # optional
 while (($# > 0)); do
   case $1 in
-    -p | --download-deps)
-      download_deps=true
-      shift 1
-      ;;
     *)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
       exit
       ;;
   esac
-done
-
-# check dependencies
-for cmd in "${!DEPENDENCIES[@]}"; do
-  if [ "${cmd}" != '' ] && [ ! "$(command -v "${cmd}")" ] >/dev/null 2>&1; then
-    if ${download_deps}; then
-      echo "[info] dependency ${DEPENDENCIES["${cmd}"]} not found"
-      if [ "$EUID" -ne 0 ]; then
-        echo "[error] run this script in sudo to install missing deps"
-        exit 1
-      else
-        echo "[info] downloading ${DEPENDENCIES["${cmd}"]}"
-        sudo apt install "${DEPENDENCIES["${cmd}"]}" -y
-      fi
-    else
-      echo "[error] dependency ${DEPENDENCIES["${cmd}"]} not found"
-      exit 1
-    fi
-  fi
 done
 
 # create directories
@@ -103,5 +77,6 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
-
-echo "[info] success"
+# https://doc.rust-lang.org/cargo/reference/environment-variables.html
+export RUSTUP_HOME=${dir_apps}/rustup
+export CARGO_HOME=${dir_apps}/cargo
