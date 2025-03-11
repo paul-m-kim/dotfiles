@@ -24,10 +24,12 @@ declare -A DEPENDENCIES=(["echo"]="echo")
 
 # runtime
 path_this_script=${0}
-dir_this_script="$(
-  cd -- "$(dirname "${path_this_script}")" >/dev/null 2>&1
-  pwd -P
-)"
+if [ "${path_this_script}" != "-bash" ]; then
+  dir_this_script="$(
+    cd -- "$(dirname "${path_this_script}")" >/dev/null 2>&1
+    pwd -P
+  )"
+fi
 
 # help
 if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
