@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 print_help() {
   local path_this_script=${1}
 
@@ -22,9 +20,9 @@ NUM_OPT_FLAGS=0
 
 # runtime
 path_this_script=${0}
-if [ "${path_this_script}" != "-bash" ]; then
+if [ -f "${path_this_script}" ]; then
   dir_this_script="$(
-    cd -- "$(dirname "${path_this_script}")" >/dev/null 2>&1
+    cd -- "$(dirname "${path_this_script}")" || return >/dev/null 2>&1
     pwd -P
   )"
 fi
@@ -67,14 +65,17 @@ done
 
 # create directories
 if [ ! -d "${dir_downloads}" ]; then
+  echo "[info] creating downloads directory"
   mkdir -p "${dir_downloads}"
 fi
 
 if [ ! -d "${dir_apps}" ]; then
+  echo "[info] creating apps directory"
   mkdir -p "${dir_apps}"
 fi
 
 if [ ! -d "${dir_bin}" ]; then
+  echo "[info] creating bin directory"
   mkdir -p "${dir_bin}"
 fi
 
@@ -82,3 +83,5 @@ fi
 # https://doc.rust-lang.org/cargo/reference/environment-variables.html
 export RUSTUP_HOME=${dir_apps}/rustup
 export CARGO_HOME=${dir_apps}/cargo
+
+echo "[info] added rust environment variables."

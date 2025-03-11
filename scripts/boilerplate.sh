@@ -24,9 +24,9 @@ declare -A DEPENDENCIES=(["echo"]="echo")
 
 # runtime
 path_this_script=${0}
-if [ "${path_this_script}" != "-bash" ]; then
+if [ -f "${path_this_script}" ]; then
   dir_this_script="$(
-    cd -- "$(dirname "${path_this_script}")" >/dev/null 2>&1
+    cd -- "$(dirname "${path_this_script}")" || return >/dev/null 2>&1
     pwd -P
   )"
 fi
