@@ -7,22 +7,19 @@ print_help() {
 
   # https://en.wikipedia.org/wiki/Usage_message
   echo "==================================================================================="
-  echo "[help] ${path_this_script} -abcd [-e | -f] --golf [-h | --hotel] val_hotel
-                                   <arg_pos_1> <arg_pos_2> [[[arg_opt_1] arg_opt_2] ...]"
+  echo "[help] ${path_this_script} [-p | --download-pkgs]
+                                   <dir_downloads> <dir_apps> <dir_bin>"
   echo ""
-  echo "       -a, --alpha                    optional flag alpha"
-  echo "       ..."
-  echo "       -h, --hotel <val_hotel>        optional argument hotel"
-  echo "       ..."
+  echo "       -p, --download_pkgs            download and install any missing pkgs"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=0
+NUM_POS_ARGS=3
 NUM_OPT_ARGS=0
-NUM_OPT_FLAGS=0
-NUM_EXT_ARGS_MAX=10
+NUM_OPT_FLAGS=1
+NUM_EXT_ARGS_MAX=0
 
 # runtime
 path_this_script=${0}
@@ -40,17 +37,22 @@ if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
 fi
 
 # check number of arguments
-if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_FLAGS + NUM_EXT_ARGS_MAX))); then
+if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_FLAGS))); then
   echo "[error] invalid number of arguments"
   print_help "${path_this_script}"
   exit 1
 fi
 
 # args optional - defaults
+download_pkgs=false
 
-# args optional labelled
+# args optional
 while (($# > 0)); do
   case $1 in
+    -p | --download-pkgs)
+      download_pkgs=true
+      shift 1
+      ;;
     -*)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
@@ -63,6 +65,13 @@ while (($# > 0)); do
 done
 
 # args positional
+
+# relative path to absolute path
+# path_abs=$(readlink --canonicalize ${path})
+# path_abs=$(cd ${path}; pwd)
+dir_downloads=$(readlink --canonicalize "${1}")
+dir_apps=$(readlink --canonicalize "${2}")
+dir_bin=$(readlink --canonicalize "${3}")
 shift ${NUM_POS_ARGS}
 
 # args optional and extra
@@ -78,4 +87,23 @@ else
 fi
 
 # business
+# check directories
+if [ ! -d "${dir_downloads}" ]; then
+  echo "[error] ${dir_downloads} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_apps}" ]; then
+  echo "[error] ${dir_apps} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_bin}" ]; then
+  echo "[error] ${dir_bin} directory does not exist"
+  exit 1
+fi
+
+. "${dir_this_script}/install_pkgs_apt.sh"
+. "${dir_this_script}/install_pkgs_pip.sh"
+
 echo "[info] success"
