@@ -7,17 +7,22 @@ print_help() {
 
   # https://en.wikipedia.org/wiki/Usage_message
   echo "==================================================================================="
-  echo "[help] ${path_this_script} [-p | --download-pkgs]
-                                   <dir_downloads> <dir_apps> <dir_bin>"
+  echo "[help] ${path_this_script} [-p | --download-pkgs] [-b | --build]
+                                   [-d | --dir_downloads] [-a | --dir_apps]
+                                   [-n | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
+  echo "       -b, --build                    desired build of neovim"
+  echo "       -d, --dir_downloads            alternative downloads directory"
+  echo "       -a, --dir_apps                 alternative apps directory"
+  echo "       -n, --dir_bin                  alternative bin directory"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=3
-NUM_OPT_ARGS=0
+NUM_POS_ARGS=1
+NUM_OPT_ARGS=4
 NUM_OPT_FLAGS=1
 NUM_EXT_ARGS_MAX=0
 
@@ -46,6 +51,9 @@ fi
 # args optional - defaults
 download_pkgs=false
 nvim_build="linux-x86_64"
+dir_downloads=""
+dir_apps=""
+dir_bin=""
 
 # args optional
 while (($# > 0)); do
@@ -56,6 +64,18 @@ while (($# > 0)); do
       ;;
     -b | --build)
       nvim_build=${2}
+      shift 2
+      ;;
+    -d | --dir_downloads)
+      dir_downloads=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -a | --dir_apps)
+      dir_apps=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -n | --dir_bin)
+      dir_bin=$(readlink --canonicalize "${2}")
       shift 2
       ;;
     -*)
@@ -74,9 +94,7 @@ done
 # relative path to absolute path
 # path_abs=$(readlink --canonicalize ${path})
 # path_abs=$(cd ${path}; pwd)
-dir_downloads=$(readlink --canonicalize "${1}")
-dir_apps=$(readlink --canonicalize "${2}")
-dir_bin=$(readlink --canonicalize "${3}")
+user=${1}
 shift ${NUM_POS_ARGS}
 
 # args optional and extra
@@ -92,7 +110,26 @@ else
 fi
 
 # business
+dir_home="/home/${user}"
+
+if [ "${dir_downloads}" == "" ]; then
+  dir_downloads=${dir_home}/downloads
+fi
+
+if [ "${dir_apps}" == "" ]; then
+  dir_apps=${dir_home}/apps
+fi
+
+if [ "${dir_bin}" == "" ]; then
+  dir_bin=${dir_home}/bin
+fi
+
 # check directories
+if [ ! -d "${dir_home}" ]; then
+  echo "[error] ${dir_home} directory does not exist"
+  exit 1
+fi
+
 if [ ! -d "${dir_downloads}" ]; then
   echo "[error] ${dir_downloads} directory does not exist"
   exit 1
@@ -110,15 +147,22 @@ fi
 
 # https://github.com/neovim/neovim/blob/master/INSTALL.md
 wget -nc -P "${dir_downloads}" https://github.com/neovim/neovim/releases/latest/download/nvim-"${nvim_build}".tar.gz
-rm "${dir_bin}"/nvim
+rm -rf "${dir_bin}"/nvim
 rm -rf "${dir_apps}"/nvim-"${nvim_build}"
 tar -C "${dir_apps}" -xzf "${dir_downloads}"/nvim-"${nvim_build}".tar.gz
 ln -s "${dir_apps}"/nvim-"${nvim_build}"/bin/nvim "${dir_bin}"/nvim
+chown -R "${user}":"${user}" "${dir_downloads}/nvim-${nvim_build}.tar.gz" "${dir_apps}/nvim-${nvim_build}" "${dir_bin}/nvim"
 
 # kickstart modular config
-if [[ ! -d ${HOME}/.config/nvim ]]; then
-  mkdir "${HOME}"/.config -p
-  git clone https://github.com/dam9000/kickstart-modular.nvim "${HOME}"/.config/nvim
+if [[ ! -d ${dir_home}/.config/nvim ]]; then
+
+  if [[ ! -d ${dir_home}/.config ]]; then
+    mkdir "${dir_home}"/.config -p
+    chown -R "${user}":"${user}" "${dir_home}/.config"
+  fi
+
+  git clone https://github.com/dam9000/kickstart-modular.nvim "${dir_home}"/.config/nvim
+  chown -R "${user}":"${user}" "${dir_home}/.config/nvim"
 fi
 
 echo "[info] success"

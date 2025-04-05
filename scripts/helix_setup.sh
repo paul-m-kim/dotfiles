@@ -7,17 +7,22 @@ print_help() {
 
   # https://en.wikipedia.org/wiki/Usage_message
   echo "==================================================================================="
-  echo "[help] ${path_this_script} [-p | --download-pkgs]
-                                   <dir_downloads> <dir_apps> <dir_bin>"
+  echo "[help] ${path_this_script} [-p | --download-pkgs] [-r | --version]
+                                   [-d | --dir_downloads] [-a | --dir_apps]
+                                   [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
+  echo "       -r, --version                  desired version of helix"
+  echo "       -d, --dir_downloads            alternative downloads directory"
+  echo "       -a, --dir_apps                 alternative apps directory"
+  echo "       -b, --dir_bin                  alternative bin directory"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=3
-NUM_OPT_ARGS=0
+NUM_POS_ARGS=1
+NUM_OPT_ARGS=4
 NUM_OPT_FLAGS=1
 NUM_EXT_ARGS_MAX=0
 
@@ -46,6 +51,9 @@ fi
 # args optional - defaults
 download_pkgs=false
 helix_version='25.01.1'
+dir_downloads=""
+dir_apps=""
+dir_bin=""
 
 # args optional
 while (($# > 0)); do
@@ -58,10 +66,25 @@ while (($# > 0)); do
       helix_version=${2}
       shift 2
       ;;
-    *)
+    -d | --dir_downloads)
+      dir_downloads=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -a | --dir_apps)
+      dir_apps=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -b | --dir_bin)
+      dir_bin=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -*)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
-      exit
+      exit 1
+      ;;
+    *)
+      break
       ;;
   esac
 done
@@ -71,9 +94,7 @@ done
 # relative path to absolute path
 # path_abs=$(readlink --canonicalize ${path})
 # path_abs=$(cd ${path}; pwd)
-dir_downloads=$(readlink --canonicalize "${1}")
-dir_apps=$(readlink --canonicalize "${2}")
-dir_bin=$(readlink --canonicalize "${3}")
+user=${1}
 shift ${NUM_POS_ARGS}
 
 # args optional and extra
@@ -89,7 +110,26 @@ else
 fi
 
 # business
+dir_home="/home/${user}"
+
+if [ "${dir_downloads}" == "" ]; then
+  dir_downloads=${dir_home}/downloads
+fi
+
+if [ "${dir_apps}" == "" ]; then
+  dir_apps=${dir_home}/apps
+fi
+
+if [ "${dir_bin}" == "" ]; then
+  dir_bin=${dir_home}/bin
+fi
+
 # check directories
+if [ ! -d "${dir_home}" ]; then
+  echo "[error] ${dir_home} directory does not exist"
+  exit 1
+fi
+
 if [ ! -d "${dir_downloads}" ]; then
   echo "[error] ${dir_downloads} directory does not exist"
   exit 1
@@ -108,12 +148,15 @@ fi
 wget -nc -P "${dir_downloads}" "https://github.com/helix-editor/helix/releases/download/${helix_version}/helix-${helix_version}-x86_64-linux.tar.xz"
 tar -xvf "${dir_downloads}"/helix-"${helix_version}"-x86_64-linux.tar.xz --directory "${dir_apps}"/
 
-if [ ! -d "$HOME/.config/helix" ]; then
-  mkdir -p "$HOME/.config/helix"
-  ln -s "${dir_apps}"/helix-"${helix_version}"-x86_64-linux/runtime/ "${HOME}"/.config/helix/runtime
+if [ ! -d "$dir_home/.config/helix" ]; then
+  mkdir -p "$dir_home/.config/helix"
+  chown -R "${user}":"${user}" "${dir_home}/.config/helix"
+  ln -s "${dir_apps}"/helix-"${helix_version}"-x86_64-linux/runtime/ "${dir_home}"/.config/helix/runtime
 fi
 
 rm -f "${dir_bin}"/hx
 ln -s "${dir_apps}"/helix-"${helix_version}"-x86_64-linux/hx "${dir_bin}"/hx
+
+chown -R "${user}":"${user}" "${dir_downloads}/helix-${helix_version}-x86_64-linux.tar.xz" "${dir_apps}/helix-${helix_version}-x86_64-linux" "${dir_bin}/hx"
 
 echo "[info] success"

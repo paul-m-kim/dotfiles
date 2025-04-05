@@ -7,10 +7,15 @@ print_help() {
 
   # https://en.wikipedia.org/wiki/Usage_message
   echo "==================================================================================="
-  echo "[help] ${path_this_script} [-p | --download-pkgs]
-                                   <dir_downloads> <dir_apps> <dir_bin>"
+  echo "[help] ${path_this_script} [-p | --download-pkgs] [-r | --version]
+                                   [-d | --dir_downloads] [-a | --dir_apps]
+                                   [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
+  echo "       -r, --version                  desired version of helix"
+  echo "       -d, --dir_downloads            alternative downloads directory"
+  echo "       -a, --dir_apps                 alternative apps directory"
+  echo "       -b, --dir_bin                  alternative bin directory"
   echo "==================================================================================="
 
 }
@@ -45,6 +50,9 @@ fi
 
 # args optional - defaults
 download_pkgs=false
+dir_downloads=""
+dir_apps=""
+dir_bin=""
 
 # args optional
 while (($# > 0)); do
@@ -52,6 +60,18 @@ while (($# > 0)); do
     -p | --download-pkgs)
       download_pkgs=true
       shift 1
+      ;;
+    -d | --dir_downloads)
+      dir_downloads=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -a | --dir_apps)
+      dir_apps=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -b | --dir_bin)
+      dir_bin=$(readlink --canonicalize "${2}")
+      shift 2
       ;;
     -*)
       echo "[error] ${1} is an invalid option"
@@ -69,9 +89,7 @@ done
 # relative path to absolute path
 # path_abs=$(readlink --canonicalize ${path})
 # path_abs=$(cd ${path}; pwd)
-dir_downloads=$(readlink --canonicalize "${1}")
-dir_apps=$(readlink --canonicalize "${2}")
-dir_bin=$(readlink --canonicalize "${3}")
+user=${1}
 shift ${NUM_POS_ARGS}
 
 # args optional and extra
@@ -87,6 +105,20 @@ else
 fi
 
 # business
+dir_home="/home/${user}"
+
+if [ "${dir_downloads}" == "" ]; then
+  dir_downloads=${dir_home}/downloads
+fi
+
+if [ "${dir_apps}" == "" ]; then
+  dir_apps=${dir_home}/apps
+fi
+
+if [ "${dir_bin}" == "" ]; then
+  dir_bin=${dir_home}/bin
+fi
+
 # check directories
 if [ ! -d "${dir_downloads}" ]; then
   echo "[error] ${dir_downloads} directory does not exist"
@@ -106,4 +138,5 @@ fi
 . "${dir_this_script}/install_pkgs_apt.sh"
 . "${dir_this_script}/install_pkgs_pip.sh"
 
+chown -R "${user}":"${user}" /path
 echo "[info] success"
