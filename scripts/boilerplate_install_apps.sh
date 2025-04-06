@@ -42,7 +42,7 @@ if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
 fi
 
 # check number of arguments
-if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_FLAGS))); then
+if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_FLAGS + NUM_EXT_ARGS_MAX))); then
   echo "[error] invalid number of arguments"
   print_help "${path_this_script}"
   exit 1
