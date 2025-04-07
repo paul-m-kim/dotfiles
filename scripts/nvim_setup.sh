@@ -82,7 +82,7 @@ while (($# > 0)); do
       dir_bin=$(readlink --canonicalize "${2}")
       shift 2
       ;;
-    -u | --userj)
+    -u | --user)
       user=${2}
       shift 2
       ;;

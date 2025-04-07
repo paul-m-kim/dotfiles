@@ -25,7 +25,7 @@ print_help() {
 # constants
 NUM_POS_ARGS=0
 NUM_OPT_ARGS=5
-NUM_OPT_FLAGS=1
+NUM_OPT_FLAGS=2
 NUM_EXT_ARGS_MAX=0
 
 # runtime
@@ -81,13 +81,13 @@ while (($# > 0)); do
       dir_bin=$(readlink --canonicalize "${2}")
       shift 2
       ;;
-    -u | --userj)
+    -u | --user)
       user=${2}
       shift 2
       ;;
     -e | --set-editor)
       set_editor=true
-      shift 2
+      shift 1
       ;;
     -*)
       echo "[error] ${1} is an invalid option"
