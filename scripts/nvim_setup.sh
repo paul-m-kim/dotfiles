@@ -126,6 +126,21 @@ if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
   exit 1
 fi
 
+if [[ "${user}" == "" ]]; then
+  echo "[error] user cannot be blank"
+  exit 1
+fi
+
+if ! id "${user}" >/dev/null 2>&1; then
+  echo "[error] user ${user} not found."
+  exit 1
+fi
+
+if [[ ! -d ${dir_home} ]]; then
+  echo "[error] home folder ${dir_home} not found."
+  exit 1
+fi
+
 if [ "${dir_downloads}" == "" ]; then
   dir_downloads=${dir_home}/downloads
 fi

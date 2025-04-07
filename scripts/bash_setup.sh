@@ -86,19 +86,23 @@ for cmd in "${!DEPENDENCIES[@]}"; do
 done
 
 # business
-LINE=". '$HOME/.bashrc_ext'"
+# shellcheck disable=SC2016
+LINE='. $HOME/.bashrc_ext'
 FILE="$HOME/.bashrc"
 grep -qxF -- "$LINE" "$FILE" || echo "$LINE" >>"$FILE"
 unset -v LINE FILE
 
-wget -nc -P "${dir_downloads}"/ https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
+wget -nc -P "${dir_downloads}/" https://github.com/patrickvane/shfmt/releases/download/master/shfmt_linux_amd64
 mv "${dir_downloads}"/shfmt_linux_amd64 "${dir_apps}"/shfmt
 chmod +x "${dir_apps}"/shfmt
 rm -f "${dir_bin}"/shfmt
 ln -s "${dir_apps}"/shfmt "${dir_bin}"/shfmt
 
-sudo apt update
-sudo apt install -y shellcheck
+shellcheck_version="v0.10.0"
+wget -nc -P "${dir_downloads}/" "https://github.com/koalaman/shellcheck/releases/download/${shellcheck_version}/shellcheck-${shellcheck_version}.linux.x86_64.tar.xz"
+tar -C "${dir_apps}" -xf "${dir_downloads}/shellcheck-${shellcheck_version}.linux.x86_64.tar.xz"
+ln -s "${dir_apps}/shellcheck-${shellcheck_version}/shellcheck" "${dir_bin}/shellcheck"
+
 sudo npm install -g bash-language-server
 
 echo "[info] success"
