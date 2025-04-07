@@ -17,6 +17,7 @@ print_help() {
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
   echo "       -u, --user                     alternative user"
+  echo "       -e, --set-editor               set editor"
   echo "==================================================================================="
 
 }
@@ -84,6 +85,10 @@ while (($# > 0)); do
       user=${2}
       shift 2
       ;;
+    -e | --set-editor)
+      set_editor=true
+      shift 2
+      ;;
     -*)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
@@ -120,8 +125,6 @@ if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
   exit 1
 fi
 
-dir_home="/home/${user}"
-
 if [ "${dir_downloads}" == "" ]; then
   dir_downloads=${dir_home}/downloads
 fi
@@ -134,7 +137,14 @@ if [ "${dir_bin}" == "" ]; then
   dir_bin=${dir_home}/bin
 fi
 
-# check directories
+# check
+if [[ "${user}" == "" ]]; then
+  echo "[error] empty username"
+  exit 1
+fi
+
+dir_home="/home/${user}"
+
 if [ ! -d "${dir_home}" ]; then
   echo "[error] ${dir_home} directory does not exist"
   exit 1
@@ -168,5 +178,24 @@ rm -f "${dir_bin}"/hx
 ln -s "${dir_apps}"/helix-"${helix_version}"-x86_64-linux/hx "${dir_bin}"/hx
 
 chown -R "${user}":"${user}" "${dir_downloads}/helix-${helix_version}-x86_64-linux.tar.xz" "${dir_apps}/helix-${helix_version}-x86_64-linux" "${dir_bin}/hx"
+
+if ${set_editor}; then
+
+  file="${dir_home}/.bashrc"
+
+  if [[ ! -f "${file}" ]]; then
+    echo "[error] file does not exist."
+    exit 1
+  fi
+
+  line="export EDITOR"
+
+  if grep -qF -- "${line}" "${file}"; then
+    sed -i "s|${line}=.*|${line}=${dir_home}/bin/nvim|" "${file}"
+  else
+    echo "${line}=${dir_home}/bin/nvim" >>"${file}"
+  fi
+
+fi
 
 echo "[info] success"

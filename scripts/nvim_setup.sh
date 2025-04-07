@@ -17,6 +17,7 @@ print_help() {
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -n, --dir_bin                  alternative bin directory"
   echo "       -u, --user                     alternative user"
+  echo "       -e, --set-editor               set editor"
   echo "==================================================================================="
 
 }
@@ -56,6 +57,7 @@ dir_downloads=""
 dir_apps=""
 dir_bin=""
 user="${USER}"
+set_editor=false
 
 # args optional
 while (($# > 0)); do
@@ -82,6 +84,10 @@ while (($# > 0)); do
       ;;
     -u | --userj)
       user=${2}
+      shift 2
+      ;;
+    -e | --set-editor)
+      set_editor=true
       shift 2
       ;;
     -*)
@@ -120,8 +126,6 @@ if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
   exit 1
 fi
 
-dir_home="/home/${user}"
-
 if [ "${dir_downloads}" == "" ]; then
   dir_downloads=${dir_home}/downloads
 fi
@@ -134,7 +138,14 @@ if [ "${dir_bin}" == "" ]; then
   dir_bin=${dir_home}/bin
 fi
 
-# check directories
+# check
+if [[ "${user}" == "" ]]; then
+  echo "[error] empty username"
+  exit 1
+fi
+
+dir_home="/home/${user}"
+
 if [ ! -d "${dir_home}" ]; then
   echo "[error] ${dir_home} directory does not exist"
   exit 1
@@ -173,6 +184,25 @@ if [[ ! -d ${dir_home}/.config/nvim ]]; then
 
   git clone https://github.com/dam9000/kickstart-modular.nvim "${dir_home}"/.config/nvim
   chown -R "${user}":"${user}" "${dir_home}/.config/nvim"
+fi
+
+if ${set_editor}; then
+
+  file="${dir_home}/.bashrc"
+
+  if [[ ! -f "${file}" ]]; then
+    echo "[error] file does not exist."
+    exit 1
+  fi
+
+  line="export EDITOR"
+
+  if grep -qF -- "${line}" "${file}"; then
+    sed -i "s|${line}=.*|${line}=${dir_home}/bin/nvim|" "${file}"
+  else
+    echo "${line}=${dir_home}/bin/nvim" >>"${file}"
+  fi
+
 fi
 
 echo "[info] success"
