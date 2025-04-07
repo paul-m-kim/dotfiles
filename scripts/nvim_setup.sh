@@ -9,20 +9,21 @@ print_help() {
   echo "==================================================================================="
   echo "[help] ${path_this_script} [-p | --download-pkgs] [-b | --build]
                                    [-d | --dir_downloads] [-a | --dir_apps]
-                                   [-n | --dir_bin] <user>"
+                                   [-n | --dir_bin] [-u | --user]"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
   echo "       -b, --build                    desired build of neovim"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -n, --dir_bin                  alternative bin directory"
+  echo "       -u, --user                     alternative user"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=1
-NUM_OPT_ARGS=4
+NUM_POS_ARGS=0
+NUM_OPT_ARGS=5
 NUM_OPT_FLAGS=1
 NUM_EXT_ARGS_MAX=0
 
@@ -54,6 +55,7 @@ nvim_build="linux-x86_64"
 dir_downloads=""
 dir_apps=""
 dir_bin=""
+user="${USER}"
 
 # args optional
 while (($# > 0)); do
@@ -78,6 +80,10 @@ while (($# > 0)); do
       dir_bin=$(readlink --canonicalize "${2}")
       shift 2
       ;;
+    -u | --userj)
+      user=${2}
+      shift 2
+      ;;
     -*)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
@@ -94,7 +100,6 @@ done
 # relative path to absolute path
 # path_abs=$(readlink --canonicalize ${path})
 # path_abs=$(cd ${path}; pwd)
-user=${1}
 shift ${NUM_POS_ARGS}
 
 # args optional and extra
@@ -110,6 +115,11 @@ else
 fi
 
 # business
+if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
+  echo "[error] choose a user if running with sudo"
+  exit 1
+fi
+
 dir_home="/home/${user}"
 
 if [ "${dir_downloads}" == "" ]; then
