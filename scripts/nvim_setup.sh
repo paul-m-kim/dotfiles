@@ -25,7 +25,7 @@ print_help() {
 # constants
 NUM_POS_ARGS=0
 NUM_OPT_ARGS=5
-NUM_OPT_FLAGS=1
+NUM_OPT_FLAGS=2
 NUM_EXT_ARGS_MAX=0
 
 # runtime
@@ -88,7 +88,7 @@ while (($# > 0)); do
       ;;
     -e | --set-editor)
       set_editor=true
-      shift 2
+      shift 1
       ;;
     -*)
       echo "[error] ${1} is an invalid option"
@@ -121,25 +121,8 @@ else
 fi
 
 # business
-if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
-  echo "[error] choose a user if running with sudo"
-  exit 1
-fi
-
-if [[ "${user}" == "" ]]; then
-  echo "[error] user cannot be blank"
-  exit 1
-fi
-
-if ! id "${user}" >/dev/null 2>&1; then
-  echo "[error] user ${user} not found."
-  exit 1
-fi
-
-if [[ ! -d ${dir_home} ]]; then
-  echo "[error] home folder ${dir_home} not found."
-  exit 1
-fi
+# set defaults
+dir_home="/home/${user}"
 
 if [ "${dir_downloads}" == "" ]; then
   dir_downloads=${dir_home}/downloads
@@ -153,13 +136,21 @@ if [ "${dir_bin}" == "" ]; then
   dir_bin=${dir_home}/bin
 fi
 
-# check
+# check inputs
+if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
+  echo "[error] choose a user if running with sudo"
+  exit 1
+fi
+
 if [[ "${user}" == "" ]]; then
   echo "[error] empty username"
   exit 1
 fi
 
-dir_home="/home/${user}"
+if ! id "${user}" >/dev/null 2>&1; then
+  echo "[error] user ${user} not found."
+  exit 1
+fi
 
 if [ ! -d "${dir_home}" ]; then
   echo "[error] ${dir_home} directory does not exist"
