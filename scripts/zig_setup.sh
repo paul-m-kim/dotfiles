@@ -6,28 +6,35 @@ print_help() {
   local path_this_script=${1}
 
   # https://en.wikipedia.org/wiki/Usage_message
-  echo "================"
-  echo "- dir_downloads "
-  echo "- dir_apps      "
-  echo "- dir_bins      "
-  echo "- zig_ver       "
-  echo "================"
+  echo "==================================================================================="
+  echo "[help] ${path_this_script} [-p | --download-pkgs] [-r | --version]
+                                   [-d | --dir_downloads] [-a | --dir_apps]
+                                   [-n | --dir_bin] [-u | --user]"
+  echo ""
+  echo "       -p, --download_pkgs            download and install any missing pkgs"
+  echo "       -r, --version                  desired version of helix"
+  echo "       -d, --dir_downloads            alternative downloads directory"
+  echo "       -a, --dir_apps                 alternative apps directory"
+  echo "       -b, --dir_bin                  alternative bin directory"
+  echo "       -u, --user                     alternative user"
+  echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=3
-NUM_OPT_ARGS=2
-NUM_OPT_FLAGS=0
-
-declare -A DEPENDENCIES=(["wget"]="wget")
+NUM_POS_ARGS=0
+NUM_OPT_ARGS=5
+NUM_OPT_FLAGS=2
+NUM_EXT_ARGS_MAX=0
 
 # runtime
 path_this_script=${0}
-dir_this_script="$(
-  cd -- "$(dirname "${path_this_script}")" >/dev/null 2>&1
-  pwd -P
-)"
+if [ -f "${path_this_script}" ]; then
+  dir_this_script="$(
+    cd -- "$(dirname "${path_this_script}")" || return >/dev/null 2>&1
+    pwd -P
+  )"
+fi
 
 # help
 if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
@@ -36,64 +43,136 @@ if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
 fi
 
 # check number of arguments
-if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_FLAGS))); then
+if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_FLAGS + NUM_EXT_ARGS_MAX))); then
   echo "[error] invalid number of arguments"
   print_help "${path_this_script}"
   exit 1
 fi
 
-# positional
-dir_downloads=${1%/}
-dir_apps=${2%/}
-dir_bin=${3%/}
-shift ${NUM_POS_ARGS}
+# args optional - defaults
+download_pkgs=false
+version_zig='0.14.0'
+dir_downloads=""
+dir_apps=""
+dir_bin=""
+user="${USER}"
 
-# optional - defaults
-download_deps=false
-zig_ver="0.14.0"
-
-# optional
+# args optional
 while (($# > 0)); do
   case $1 in
-    -r | --version)
-      zig_ver=$2
-      shift 2
-      ;;
-    -p | --download-deps)
-      download_deps=true
+    -p | --download-pkgs)
+      download_pkgs=true
       shift 1
       ;;
-    *)
+    -r | --version)
+      version_zig=${2}
+      shift 2
+      ;;
+    -d | --dir_downloads)
+      dir_downloads=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -a | --dir_apps)
+      dir_apps=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -b | --dir_bin)
+      dir_bin=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -u | --user)
+      user=${2}
+      shift 2
+      ;;
+    -e | --set-editor)
+      set_editor=true
+      shift 1
+      ;;
+    -*)
       echo "[error] ${1} is an invalid option"
       print_help "${path_this_script}"
-      exit
+      exit 1
+      ;;
+    *)
+      break
       ;;
   esac
 done
 
-# check dependencies
-for cmd in "${!DEPENDENCIES[@]}"; do
-  if [ "${cmd}" != '' ] && [ ! "$(command -v "${cmd}")" ] >/dev/null 2>&1; then
-    if ${download_deps}; then
-      echo "[info] dependency ${DEPENDENCIES["${cmd}"]} not found"
-      if [ "$EUID" -ne 0 ]; then
-        echo "[error] run this script in sudo to install missing deps"
-        exit 1
-      else
-        echo "[info] downloading ${DEPENDENCIES["${cmd}"]}"
-        sudo apt install "${DEPENDENCIES["${cmd}"]}" -y
-      fi
-    else
-      echo "[error] dependency ${DEPENDENCIES["${cmd}"]} not found"
-      exit 1
-    fi
-  fi
-done
+# args positional
+
+# relative path to absolute path
+# path_abs=$(readlink --canonicalize ${path})
+# path_abs=$(cd ${path}; pwd)
+shift ${NUM_POS_ARGS}
+
+# args optional and extra
+if (($# > NUM_EXT_ARGS_MAX)); then
+  echo "[error] there are too many extra arguments"
+  exit 1
+else
+  declare -a args_extra=()
+  while (($# > 0)); do
+    args_extra+=("${1}")
+    shift 1
+  done
+fi
+
+# set defaults
+dir_home="/home/${user}"
+
+if [ "${dir_downloads}" == "" ]; then
+  dir_downloads=${dir_home}/downloads
+fi
+
+if [ "${dir_apps}" == "" ]; then
+  dir_apps=${dir_home}/apps
+fi
+
+if [ "${dir_bin}" == "" ]; then
+  dir_bin=${dir_home}/bin
+fi
+
+# check inputs
+if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
+  echo "[error] choose a user if running with sudo"
+  exit 1
+fi
+
+if [[ "${user}" == "" ]]; then
+  echo "[error] empty username"
+  exit 1
+fi
+
+if ! id "${user}" >/dev/null 2>&1; then
+  echo "[error] user ${user} not found."
+  exit 1
+fi
+
+if [ ! -d "${dir_home}" ]; then
+  echo "[error] ${dir_home} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_downloads}" ]; then
+  echo "[error] ${dir_downloads} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_apps}" ]; then
+  echo "[error] ${dir_apps} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_bin}" ]; then
+  echo "[error] ${dir_bin} directory does not exist"
+  exit 1
+fi
 
 # business
-wget -nc -P "${dir_downloads}"/ https://ziglang.org/download/"${zig_ver}"/zig-linux-x86_64-"${zig_ver}".tar.xz
-tar -C "${dir_apps}" -xf "${dir_downloads}"/zig-linux-x86_64-"${zig_ver}".tar.xz
+wget -nc -P "${dir_downloads}"/ https://ziglang.org/download/"${version_zig}"/zig-linux-x86_64-"${version_zig}".tar.xz
+tar -C "${dir_apps}" -xf "${dir_downloads}"/zig-linux-x86_64-"${version_zig}".tar.xz
 rm -f "${dir_bin}"/zig
-ln -s "${dir_apps}"/zig-linux-x86_64-"${zig_ver}"/zig "${dir_bin}"/zig
+ln -s "${dir_apps}"/zig-linux-x86_64-"${version_zig}"/zig "${dir_bin}"/zig
 
 echo "[info] success"
