@@ -30,8 +30,8 @@ print_help() {
 }
 
 # constants
-NUM_POS_ARGS=0
-NUM_OPT_ARGS=0
+NUM_POS_ARGS=1
+NUM_OPT_ARGS=3
 NUM_OPT_FLAGS=0
 
 # runtime
