@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# todo:
+# - fully support usage format:
+#   - https://en.wikipedia.org/wiki/Usage_message
+#   - https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html#tag_12_01
+#   - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/command-line-syntax-key
+
 set -e
 
 print_help() {
@@ -19,6 +25,13 @@ print_help() {
 
 }
 
+print_examples() {
+  echo "==================================================================================="
+  echo "[help] some examples:"
+  echo ""
+  echo "==================================================================================="
+}
+
 # constants
 NUM_POS_ARGS=0
 NUM_OPT_ARGS=0
@@ -33,9 +46,17 @@ if [ -f "${path_this_script}" ]; then
   )"
 fi
 
+declare -a argv_rem
+
 # help
 if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
   print_help "${path_this_script}"
+  exit 0
+fi
+
+# examples
+if [[ "${1}" == "--examples" ]]; then
+  print_examples
   exit 0
 fi
 
@@ -47,36 +68,50 @@ if (($# < NUM_POS_ARGS)) || (($# > (NUM_POS_ARGS + (NUM_OPT_ARGS * 2) + NUM_OPT_
 fi
 
 # args optional - defaults
+opts_end=false
 
 # args optional labelled
-while (($# > 0)); do
-  case $1 in
-    -*)
-      echo "[error] ${1} is an invalid option"
-      print_help "${path_this_script}"
-      exit 1
-      ;;
-    *)
-      break
-      ;;
-  esac
-done
+function fn_opts_parse() {
+
+  while (($# > 0)); do
+    case $1 in
+      --)
+        opts_end=true
+        shift 1
+        break
+        ;;
+
+      -*)
+        echo "[error] ${1} is an invalid option"
+        print_help "${path_this_script}"
+        exit 1
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+}
+
+fn_opts_parse "$@"
+set -- "${argv_rem[@]}"
 
 # args positional
+if (($# < NUM_POS_ARGS)); then
+  echo "[error] not enough positional arguments."
+  exit 1
+fi
+
 shift ${NUM_POS_ARGS}
 
 # args optional - defaults
 
-# args optional labelled
-while (($# > 0)); do
-  case $1 in
-    -*)
-      echo "[error] ${1} is an invalid option"
-      print_help "${path_this_script}"
-      exit 1
-      ;;
-  esac
-done
+# args optional trailing
+if ! ${opts_end}; then
+  fn_opts_parse "$@"
+  set -- "${argv_rem[@]}"
+fi
 
 # business
 echo "[info] success"
