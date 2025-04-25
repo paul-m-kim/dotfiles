@@ -87,8 +87,10 @@ function fn_opts_parse() {
         exit 1
         ;;
       *)
-        break
+        argv_rem=("$@")
+        return 0
         ;;
+
     esac
   done
 
