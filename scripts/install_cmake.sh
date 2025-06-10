@@ -1,5 +1,3 @@
-#!/bin/bash
-
 set -e
 
 print_help() {
@@ -9,10 +7,10 @@ print_help() {
   echo "==================================================================================="
   echo "[help] ${path_this_script} [-p | --download-pkgs] [-r | --version]
                                    [-d | --dir_downloads] [-a | --dir_apps]
-                                   [-n | --dir_bin] [-u | --user]"
+                                   [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -r, --version                  desired version"
+  echo "       -r, --version                  desired version of helix"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
@@ -166,8 +164,11 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
+url_github_base="https://github.com/Kitware/CMake/releases"
+url_github_latest="${url_github_base}/latest"
+
 if [ "${version}" == 'latest' ]; then
-  latest_url_header=$(curl --head https://github.com/LuaLS/lua-language-server/releases/latest | grep location)
+  latest_url_header=$(curl --head "${url_github_latest}" | grep location)
   regex_get_version="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
   if [[ $latest_url_header =~ $regex_get_version ]]; then
     version="${BASH_REMATCH[1]}"
@@ -179,8 +180,24 @@ if [ "${version}" == 'latest' ]; then
 
 fi
 
-wget -nc -P "${dir_downloads}" "https://github.com/LuaLS/lua-language-server/releases/download/${version}/lua-language-server-${version}-linux-x64.tar.gz"
-mkdir -p "${dir_apps}/lua-language-server"
-tar -xf "${dir_downloads}/lua-language-server-${version}-linux-x64.tar.gz" --directory="${dir_apps}/lua-language-server/"
-rm -f "${dir_bin}/lua-language-server"
-ln -s "${dir_apps}/lua-language-server/bin/lua-language-server" "${dir_bin}/lua-language-server"
+regex_get_version_numberals="^v([0-9.-]+)\s*$"
+if [[ $version =~ $regex_get_version_numberals ]]; then
+  version_numerals="${BASH_REMATCH[1]}"
+  echo "[info] version numerals: $version_numerals"
+fi
+
+url_github_version="${url_github_base}/download/${version}"
+pkg_name="cmake"
+pkg_filename="cmake-${version_numerals}-linux-x86_64"
+
+wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_filename}.tar.gz"
+rm -rf "${dir_apps:?}/${pkg_name:?}"
+mkdir -p "${dir_apps}/${pkg_name}"
+tar -xvzf "${dir_downloads}/${pkg_filename}.tar.gz" --directory="${dir_apps}/${pkg_name}/"
+
+apps=$(ls "${dir_apps}/${pkg_name}/${pkg_filename}/bin/")
+
+for app in ${apps}; do
+  rm -f "${dir_bin}/${app}"
+  ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/bin/${app}" "${dir_bin}/${app}"
+done

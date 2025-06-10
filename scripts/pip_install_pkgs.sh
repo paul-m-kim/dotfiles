@@ -100,6 +100,7 @@ fi
 
 python3 -m venv "${dir_python}"
 . "${dir_python}/bin/activate"
+pip3 install "${args_extra[@]}"
 
 for pip in "${args_extra[@]}"; do
   if [ "${pip}" != '' ] && [ ! "$(command -v "${pip}")" ] >/dev/null 2>&1; then

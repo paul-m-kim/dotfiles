@@ -50,9 +50,11 @@ fi
 
 # args optional - defaults
 download_pkgs=false
+version='latest'
 dir_downloads=""
 dir_apps=""
 dir_bin=""
+user="${USER}"
 
 # args optional
 while (($# > 0)); do
@@ -60,6 +62,10 @@ while (($# > 0)); do
     -p | --download-pkgs)
       download_pkgs=true
       shift 1
+      ;;
+    -r | --version)
+      version=${2}
+      shift 2
       ;;
     -d | --dir_downloads)
       dir_downloads=$(readlink --canonicalize "${2}")
@@ -71,6 +77,10 @@ while (($# > 0)); do
       ;;
     -b | --dir_bin)
       dir_bin=$(readlink --canonicalize "${2}")
+      shift 2
+      ;;
+    -u | --user)
+      user=${2}
       shift 2
       ;;
     -*)
@@ -89,7 +99,6 @@ done
 # relative path to absolute path
 # path_abs=$(readlink --canonicalize ${path})
 # path_abs=$(cd ${path}; pwd)
-user=${1}
 shift ${NUM_POS_ARGS}
 
 # args optional and extra
@@ -102,6 +111,57 @@ else
     args_extra+=("${1}")
     shift 1
   done
+fi
+
+# set defaults
+dir_home="/home/${user}"
+
+if [ "${dir_downloads}" == "" ]; then
+  dir_downloads=${dir_home}/downloads
+fi
+
+if [ "${dir_apps}" == "" ]; then
+  dir_apps=${dir_home}/apps
+fi
+
+if [ "${dir_bin}" == "" ]; then
+  dir_bin=${dir_home}/bin
+fi
+
+# check inputs
+if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
+  echo "[error] choose a user if running with sudo"
+  exit 1
+fi
+
+if [[ "${user}" == "" ]]; then
+  echo "[error] empty username"
+  exit 1
+fi
+
+if ! id "${user}" >/dev/null 2>&1; then
+  echo "[error] user ${user} not found."
+  exit 1
+fi
+
+if [ ! -d "${dir_home}" ]; then
+  echo "[error] ${dir_home} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_downloads}" ]; then
+  echo "[error] ${dir_downloads} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_apps}" ]; then
+  echo "[error] ${dir_apps} directory does not exist"
+  exit 1
+fi
+
+if [ ! -d "${dir_bin}" ]; then
+  echo "[error] ${dir_bin} directory does not exist"
+  exit 1
 fi
 
 # business
