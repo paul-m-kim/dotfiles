@@ -188,12 +188,13 @@ fi
 
 url_github_version="${url_github_base}/download/${version}"
 pkg_name="cmake"
-pkg_filename="cmake-${version_numerals}-linux-x86_64"
+pkg_filename="${pkg_name}-${version_numerals}-linux-x86_64"
+pkg_archive="${pkg_filename}.tar.gz"
 
-wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_filename}.tar.gz"
+wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}
 rm -rf "${dir_apps:?}/${pkg_name:?}"
 mkdir -p "${dir_apps}/${pkg_name}"
-tar -xvzf "${dir_downloads}/${pkg_filename}.tar.gz" --directory="${dir_apps}/${pkg_name}/"
+tar -xvzf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
 
 apps=$(ls "${dir_apps}/${pkg_name}/${pkg_filename}/bin/")
 

@@ -52,7 +52,7 @@ fi
 
 # args optional - defaults
 download_pkgs=false
-helix_version='25.01.1'
+version='latest'
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -66,7 +66,7 @@ while (($# > 0)); do
       shift 1
       ;;
     -r | --version)
-      helix_version=${2}
+      version=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -171,19 +171,43 @@ if [ ! -d "${dir_bin}" ]; then
   exit 1
 fi
 
-wget -nc -P "${dir_downloads}" "https://github.com/helix-editor/helix/releases/download/${helix_version}/helix-${helix_version}-x86_64-linux.tar.xz"
-tar -xvf "${dir_downloads}"/helix-"${helix_version}"-x86_64-linux.tar.xz --directory "${dir_apps}"/
+# business
+url_github_base="https://github.com/helix-editor/helix/releases"
+url_github_latest="${url_github_base}/latest"
+
+if [ "${version}" == 'latest' ]; then
+  latest_url_header=$(curl --head "${url_github_latest}" | grep location)
+  echo "[info] github latest ${latest_url_header}"
+  regex_get_version="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
+  if [[ $latest_url_header =~ $regex_get_version ]]; then
+    version="${BASH_REMATCH[1]}"
+    echo "[info] using the latest verion: $version"
+  else
+    echo "[error] failed to get latest version."
+    exit 1
+  fi
+fi
+
+url_github_version="${url_github_base}/download/${version}"
+pkg_name="helix"
+pkg_filename="${pkg_name}-${version}-x86_64-linux"
+pkg_archive="${pkg_filename}.tar.xz"
+
+wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
+mkdir -p "${dir_apps}/${pkg_name}"
+rm -rf "${dir_apps:?}/${pkg_name:?}/${pkg_filename:?}"
+tar -xvf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
+
+rm -f "${dir_bin}"/hx
+ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/hx" "${dir_bin}"/hx
 
 if [ ! -d "$dir_home/.config/helix" ]; then
   mkdir -p "$dir_home/.config/helix"
   chown -R "${user}":"${user}" "${dir_home}/.config/helix"
-  ln -s "${dir_apps}"/helix-"${helix_version}"-x86_64-linux/runtime/ "${dir_home}"/.config/helix/runtime
+  ln -s "${dir_apps}/${pkg_filename}/runtime/" "${dir_home}/.config/helix/runtime"
 fi
 
-rm -f "${dir_bin}"/hx
-ln -s "${dir_apps}"/helix-"${helix_version}"-x86_64-linux/hx "${dir_bin}"/hx
-
-chown -R "${user}":"${user}" "${dir_downloads}/helix-${helix_version}-x86_64-linux.tar.xz" "${dir_apps}/helix-${helix_version}-x86_64-linux" "${dir_bin}/hx"
+# chown -R "${user}":"${user}" "${dir_downloads}/helix-${helix_version}-x86_64-linux.tar.xz" "${dir_apps}/helix-${helix_version}-x86_64-linux" "${dir_bin}/hx"
 
 if ${set_editor}; then
 
