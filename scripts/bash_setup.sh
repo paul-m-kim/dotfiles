@@ -210,6 +210,7 @@ if [[ "${pkg_archive}" == '' ]]; then
   cp "${dir_downloads}/${pkg_filename}" "${dir_apps}/${pkg_name}/"
 
   rm -f "${dir_bin}/${pkg_executable}"
+  chmod +x "${dir_apps}/${pkg_name}/${pkg_executable}"
   ln -s "${dir_apps}/${pkg_name}/${pkg_filename}" "${dir_bin}/${pkg_executable}"
 else
   wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
@@ -217,6 +218,7 @@ else
   tar -xvf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
 
   rm -f "${dir_bin}/${pkg_executable}"
+  chmod +x "${dir_apps}/${pkg_name}/${pkg_filename}/${pkg_executable}"
   ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/${pkg_executable}" "${dir_bin}/${pkg_executable}"
 fi
 

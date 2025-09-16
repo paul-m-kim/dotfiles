@@ -166,17 +166,17 @@ fi
 # business
 version_numerals="10.3-2021.10"
 
-url_download_parent="https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm"
-url_download_version="${url_download_parent}/${version_numerals}"
+url_download_base="https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm"
+url_download_version="${url_download_base}/${version_numerals}"
 
 pkg_name="arm"
 pkg_filename="gcc-arm-none-eabi-${version_numerals}"
 pkg_archive_name="${pkg_filename}-x86_64-linux"
 
-wget -nc -P "${dir_downloads}/ ${url_download_version}/${pkg_archive_name}.tar.bz2"
+wget -nc -P "${dir_downloads}/" "${url_download_version}/${pkg_archive_name}.tar.bz2"
 rm -rf "${dir_apps:?}/${pkg_name:?}"
 mkdir -p "${dir_apps}/${pkg_name}"
-tar -C "${dir_apps}" -xvf "${dir_downloads}/${pkg_filename}.tar.bz2"
+tar -C "${dir_apps}/${pkg_name}" -xvf "${dir_downloads}/${pkg_archive_name}.tar.bz2"
 
 # ln -s "${dir_apps}/${pkg_filename}/bin/*" "${dir_bin}/"
 apps=$(ls "${dir_apps}/${pkg_name}/${pkg_filename}/bin/")
