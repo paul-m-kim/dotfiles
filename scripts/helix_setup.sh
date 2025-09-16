@@ -119,7 +119,6 @@ else
   done
 fi
 
-# business
 # set defaults
 dir_home="/home/${user}"
 
