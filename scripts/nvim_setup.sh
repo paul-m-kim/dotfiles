@@ -53,6 +53,7 @@ fi
 # args optional - defaults
 download_pkgs=false
 nvim_build="linux-x86_64"
+version='latest'
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -66,8 +67,8 @@ while (($# > 0)); do
       download_pkgs=true
       shift 1
       ;;
-    -b | --build)
-      nvim_build=${2}
+    -b | --version)
+      version=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -172,13 +173,39 @@ if [ ! -d "${dir_bin}" ]; then
   exit 1
 fi
 
+# business
+url_github_base="https://github.com/neovim/neovim/releases"
+url_github_latest="${url_github_base}/latest"
+regex_get_version="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
+
+if [ "${version}" == 'latest' ]; then
+  latest_url_header=$(curl --head "${url_github_latest}" | grep location)
+  if [[ $latest_url_header =~ $regex_get_version ]]; then
+    version="${BASH_REMATCH[1]}"
+    echo "[info] using the latest verion: $version"
+  else
+    echo "[error] failed to get latest version."
+    exit 1
+  fi
+
+fi
+
 # https://github.com/neovim/neovim/blob/master/INSTALL.md
-wget -nc -P "${dir_downloads}" https://github.com/neovim/neovim/releases/latest/download/nvim-"${nvim_build}".tar.gz
-rm -rf "${dir_bin}"/nvim
-rm -rf "${dir_apps}"/nvim-"${nvim_build}"
-tar -C "${dir_apps}" -xzf "${dir_downloads}"/nvim-"${nvim_build}".tar.gz
-ln -s "${dir_apps}"/nvim-"${nvim_build}"/bin/nvim "${dir_bin}"/nvim
-chown -R "${user}":"${user}" "${dir_downloads}/nvim-${nvim_build}.tar.gz" "${dir_apps}/nvim-${nvim_build}" "${dir_bin}/nvim"
+url_github_version="${url_github_base}/download/${version}"
+pkg_name="nvim"
+pkg_filename="${pkg_name}-linux-x86_64"
+pkg_archive="${pkg_filename}.tar.gz"
+
+# nvim archives have the same names
+rm -f "${dir_downloads}/${pkg_archive}"
+
+wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
+mkdir -p "${dir_apps}/${pkg_name}"
+rm -rf "${dir_apps:?}/${pkg_name:?}/${pkg_filename}"
+tar -C "${dir_apps}/${pkg_name}/" -xzf "${dir_downloads}/${pkg_archive}"
+
+rm -f "${dir_bin}/${pkg_name}"
+ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/bin/${pkg_name}" "${dir_bin}/${pkg_name}"
 
 # kickstart modular config
 if [[ ! -d ${dir_home}/.config/nvim ]]; then
