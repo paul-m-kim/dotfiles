@@ -12,7 +12,9 @@ print_help() {
                                    [-n | --dir_bin] [-u | --user]"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -r, --version                  desired version of helix"
+  echo "       -r, --version                  desired version"
+  echo "       -t, --target                   desired target"
+  echo "       -t, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
@@ -24,7 +26,7 @@ print_help() {
 
 # constants
 NUM_POS_ARGS=0
-NUM_OPT_ARGS=5
+NUM_OPT_ARGS=7
 NUM_OPT_FLAGS=2
 NUM_EXT_ARGS_MAX=0
 
@@ -53,6 +55,8 @@ fi
 # args optional - defaults
 download_pkgs=false
 version='latest'
+target='x64'
+os='linux'
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -67,6 +71,10 @@ while (($# > 0)); do
       ;;
     -r | --version)
       version=${2}
+      shift 2
+      ;;
+    -t | --target)
+      target=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -171,6 +179,43 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
+case "${target}" in
+  x86)
+    err "not available"
+    ;;
+  x64)
+    target_text='x86_64'
+    ;;
+  arm32)
+    err "not available"
+    ;;
+  arm64)
+    target_text='aarch64'
+    ;;
+  *)
+    err "not available"
+    ;;
+esac
+
+case "${os}" in
+  windows)
+    os_text='windows'
+    compression_file_extension='zip'
+    err "not supported in script"
+    ;;
+  macos)
+    os_text='macos'
+    compression_file_extension='tar.gz'
+    ;;
+  linux)
+    os_text='linux'
+    compression_file_extension='tar.gz'
+    ;;
+  *)
+    err "not supported"
+    ;;
+esac
+
 url_github_base="https://github.com/helix-editor/helix/releases"
 url_github_latest="${url_github_base}/latest"
 
@@ -189,8 +234,8 @@ fi
 
 url_github_version="${url_github_base}/download/${version}"
 pkg_name="helix"
-pkg_filename="${pkg_name}-${version}-x86_64-linux"
-pkg_archive="${pkg_filename}.tar.xz"
+pkg_filename="${pkg_name}-${version}-${target_text}-${os_text}"
+pkg_archive="${pkg_filename}.${compression_file_extension}"
 
 wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
 mkdir -p "${dir_apps}/${pkg_name}"
