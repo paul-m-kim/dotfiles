@@ -14,7 +14,7 @@ print_help() {
   echo "       -p, --download_pkgs            download and install any missing pkgs"
   echo "       -r, --version                  desired version"
   echo "       -t, --target                   desired target"
-  echo "       -t, --os                       desired os"
+  echo "       -o, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
@@ -75,6 +75,10 @@ while (($# > 0)); do
       ;;
     -t | --target)
       target=${2}
+      shift 2
+      ;;
+    -o | --os)
+      os=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -205,11 +209,11 @@ case "${os}" in
     ;;
   macos)
     os_text='macos'
-    compression_file_extension='tar.gz'
+    compression_file_extension='tar.xz'
     ;;
   linux)
     os_text='linux'
-    compression_file_extension='tar.gz'
+    compression_file_extension='tar.xz'
     ;;
   *)
     err "not supported"
