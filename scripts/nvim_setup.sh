@@ -12,7 +12,9 @@ print_help() {
                                    [-n | --dir_bin] [-u | --user]"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -b, --build                    desired build of neovim"
+  echo "       -r, --version                  desired version"
+  echo "       -t, --target                   desired target"
+  echo "       -o, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -n, --dir_bin                  alternative bin directory"
@@ -23,10 +25,13 @@ print_help() {
 }
 
 # constants
-NUM_POS_ARGS=0
-NUM_OPT_ARGS=5
-NUM_OPT_FLAGS=2
-NUM_EXT_ARGS_MAX=0
+readonly NUM_POS_ARGS=0
+readonly NUM_OPT_ARGS=7
+readonly NUM_OPT_FLAGS=2
+readonly NUM_EXT_ARGS_MAX=0
+
+target=$(uname -m)
+os=$(uname)
 
 # runtime
 path_this_script=${0}
@@ -52,8 +57,9 @@ fi
 
 # args optional - defaults
 download_pkgs=false
-nvim_build="linux-x86_64"
 version='latest'
+target=${target,,}
+os=${os,,}
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -69,6 +75,14 @@ while (($# > 0)); do
       ;;
     -b | --version)
       version=${2}
+      shift 2
+      ;;
+    -t | --target)
+      target=${2}
+      shift 2
+      ;;
+    -o | --os)
+      os=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -174,6 +188,43 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
+case "${target}" in
+  x86)
+    err "not available"
+    ;;
+  x86_64)
+    target_text='x86_64'
+    ;;
+  aarch32)
+    err "not available"
+    ;;
+  aarch64)
+    target_text='arm64'
+    ;;
+  *)
+    err "not available"
+    ;;
+esac
+
+case "${os}" in
+  windows)
+    os_text='win'
+    compression_file_extension='zip'
+    err "not supported in script"
+    ;;
+  darwin)
+    os_text='macos'
+    compression_file_extension='tar.gz'
+    ;;
+  linux)
+    os_text='linux'
+    compression_file_extension='tar.gz'
+    ;;
+  *)
+    err "not supported"
+    ;;
+esac
+
 url_github_base="https://github.com/neovim/neovim/releases"
 url_github_latest="${url_github_base}/latest"
 regex_get_version="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
@@ -193,7 +244,7 @@ fi
 # https://github.com/neovim/neovim/blob/master/INSTALL.md
 url_github_version="${url_github_base}/download/${version}"
 pkg_name="nvim"
-pkg_filename="${pkg_name}-linux-x86_64"
+pkg_filename="${pkg_name}-${os_text}-${target_text}"
 pkg_archive="${pkg_filename}.tar.gz"
 
 # nvim archives have the same names

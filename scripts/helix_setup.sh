@@ -25,10 +25,13 @@ print_help() {
 }
 
 # constants
-NUM_POS_ARGS=0
-NUM_OPT_ARGS=7
-NUM_OPT_FLAGS=2
-NUM_EXT_ARGS_MAX=0
+readonly NUM_POS_ARGS=0
+readonly NUM_OPT_ARGS=7
+readonly NUM_OPT_FLAGS=2
+readonly NUM_EXT_ARGS_MAX=0
+
+target=$(uname -m)
+os=$(uname)
 
 # runtime
 path_this_script=${0}
@@ -55,8 +58,8 @@ fi
 # args optional - defaults
 download_pkgs=false
 version='latest'
-target='x64'
-os='linux'
+target=${target,,}
+os=${os,,}
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -187,13 +190,13 @@ case "${target}" in
   x86)
     err "not available"
     ;;
-  x64)
+  x86_64)
     target_text='x86_64'
     ;;
-  arm32)
+  aarch32)
     err "not available"
     ;;
-  arm64)
+  aarch64)
     target_text='aarch64'
     ;;
   *)
@@ -207,7 +210,7 @@ case "${os}" in
     compression_file_extension='zip'
     err "not supported in script"
     ;;
-  macos)
+  darwin)
     os_text='macos'
     compression_file_extension='tar.xz'
     ;;
