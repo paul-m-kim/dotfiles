@@ -241,6 +241,7 @@ fi
 
 url_github_version="${url_github_base}/download/${version}"
 pkg_name="helix"
+pkg_bin="hx"
 pkg_filename="${pkg_name}-${version}-${target_text}-${os_text}"
 pkg_archive="${pkg_filename}.${compression_file_extension}"
 
@@ -249,8 +250,8 @@ mkdir -p "${dir_apps}/${pkg_name}"
 rm -rf "${dir_apps:?}/${pkg_name:?}/${pkg_filename:?}"
 tar -xvf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
 
-rm -f "${dir_bin}"/hx
-ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/hx" "${dir_bin}"/hx
+rm -f "${dir_bin}/${pkg_bin}"
+ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/${pkg_bin}" "${dir_bin}/${pkg_bin}"
 
 if [ ! -d "$dir_home/.config/helix" ]; then
   mkdir -p "$dir_home/.config/helix"
@@ -272,9 +273,9 @@ if ${set_editor}; then
   line="export EDITOR"
 
   if grep -qF -- "${line}" "${file}"; then
-    sed -i "s|${line}=.*|${line}=${dir_home}/bin/nvim|" "${file}"
+    sed -i "s|${line}=.*|${line}=${dir_home}/bin/${pkg_bin}|" "${file}"
   else
-    echo "${line}=${dir_home}/bin/nvim" >>"${file}"
+    echo "${line}=${dir_home}/bin/${pkg_bin}" >>"${file}"
   fi
 
 fi
