@@ -12,19 +12,25 @@ print_help() {
                                    [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -r, --version                  desired version of helix"
+  echo "       -r, --version                  desired version"
+  echo "       -t, --target                   desired target"
+  echo "       -o, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
+  echo "       -u, --user                     alternative user"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=3
-NUM_OPT_ARGS=0
-NUM_OPT_FLAGS=1
-NUM_EXT_ARGS_MAX=0
+readonly NUM_POS_ARGS=0
+readonly NUM_OPT_ARGS=7
+readonly NUM_OPT_FLAGS=1
+readonly NUM_EXT_ARGS_MAX=0
+
+target=$(uname -m)
+os=$(uname)
 
 # runtime
 path_this_script=${0}
@@ -34,6 +40,8 @@ if [ -f "${path_this_script}" ]; then
     pwd -P
   )"
 fi
+
+source "${dir_this_script}/common.sh"
 
 # help
 if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
@@ -50,7 +58,9 @@ fi
 
 # args optional - defaults
 download_pkgs=false
-version='latest'
+github_release='latest'
+target=${target,,}
+os=${os,,}
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -64,7 +74,15 @@ while (($# > 0)); do
       shift 1
       ;;
     -r | --version)
-      version=${2}
+      github_release=${2}
+      shift 2
+      ;;
+    -t | --target)
+      target=${2}
+      shift 2
+      ;;
+    -o | --os)
+      os=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -82,6 +100,10 @@ while (($# > 0)); do
     -u | --user)
       user=${2}
       shift 2
+      ;;
+    -e | --set-editor)
+      set_editor=true
+      shift 1
       ;;
     -*)
       echo "[error] ${1} is an invalid option"
@@ -165,38 +187,139 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
-dir_home="/home/${user}"
+target_text=''
 
-if [ "${dir_downloads}" == "" ]; then
-  dir_downloads=${dir_home}/downloads
+case "${os}" in
+  windows)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        err "not available"
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        err "not available"
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    pkg_compression='zip'
+    err "not supported in script"
+    ;;
+  darwin)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        err "not available"
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        err "not available"
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    pkg_compression='tar.gz'
+    ;;
+  linux)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        err "not available"
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        err "not available"
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    pkg_compression='tar.gz'
+    ;;
+  *)
+    err "not supported"
+    ;;
+esac
+
+github_root=''
+github_repo=''
+github_base_url="https://github.com/${github_root}/${github_repo}/releases"
+github_latest_url="${github_base_url}/latest"
+
+if [ "${github_release}" == 'latest' ]; then
+  latest_release_url_header=$(curl --head "${github_latest_url}" | grep location)
+  regex_get_release="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
+  if [[ $latest_release_url_header =~ $regex_get_release ]]; then
+    github_release="${BASH_REMATCH[1]}"
+    echo "[info] using the latest verion: $github_release"
+  else
+    echo "[error] failed to get latest version."
+    exit 1
+  fi
+
 fi
 
-if [ "${dir_apps}" == "" ]; then
-  dir_apps=${dir_home}/apps
+regex_get_version="^v([0-9.-]+)\s*$"
+if [[ $github_release =~ $regex_get_version ]]; then
+  version="${BASH_REMATCH[1]}"
+  echo "[info] version numerals: $version"
 fi
 
-if [ "${dir_bin}" == "" ]; then
-  dir_bin=${dir_home}/bin
+github_version_url="${github_base_url}/download/${github_release}"
+pkg_name=""
+pkg_bin=""
+
+pkg_filename_has_version=true
+if [ "${pkg_filename_has_version}" = true ]; then
+  pkg_filename="${pkg_name}-${version}-${target_text}"
+else
+  pkg_filename="${pkg_name}-${target_text}"
 fi
+pkg_archive="${pkg_filename}.${pkg_compression}"
 
-# check directories
-if [ ! -d "${dir_downloads}" ]; then
-  echo "[error] ${dir_downloads} directory does not exist"
-  exit 1
+wget -nc -P "${dir_downloads}" "${github_version_url}/${pkg_archive}"
+rm -rf "${dir_apps:?}/${pkg_name:?}"
+mkdir -p "${dir_apps}/${pkg_name}"
+
+case "${pkg_compression}" in
+  'zip')
+    unzip -u "${dir_downloads}/${pkg_archive}" -d "${dir_apps}/${pkg_name}"
+    ;;
+  'tar.xz' | 'tar.gz')
+    tar -xvzf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
+    ;;
+  *)
+    err "unsupported compression."
+    ;;
+esac
+
+if [[ -n "${pkg_bin}" ]]; then
+
+  rm -f "${dir_bin}/${pkg_bin}"
+  ln -s "${dir_apps}/${pkg_name,,}/${pkg_filename}/${pkg_bin}" "${dir_bin}/${app}"
+
+else
+
+  apps=$(ls "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/")
+
+  for app in ${apps}; do
+    rm -f "${dir_bin}/${app}"
+    ln -s "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/${app}" "${dir_bin}/${app}"
+  done
+
 fi
-
-if [ ! -d "${dir_apps}" ]; then
-  echo "[error] ${dir_apps} directory does not exist"
-  exit 1
-fi
-
-if [ ! -d "${dir_bin}" ]; then
-  echo "[error] ${dir_bin} directory does not exist"
-  exit 1
-fi
-
-. "${dir_this_script}/install_pkgs_apt.sh"
-. "${dir_this_script}/install_pkgs_pip.sh"
-
-chown -R "${user}":"${user}" /path
-echo "[info] success"

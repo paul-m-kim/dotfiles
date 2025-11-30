@@ -186,6 +186,8 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
+target_text=''
+
 case "${os}" in
   windows)
     case "${target}" in
@@ -287,8 +289,6 @@ wget -nc -P "${dir_downloads}" "${github_version_url}/${pkg_archive}"
 rm -rf "${dir_apps:?}/${pkg_name:?}"
 mkdir -p "${dir_apps}/${pkg_name}"
 tar -xvzf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
-
-apps=$(ls "${dir_apps}/${pkg_name}/${pkg_filename}/bin/")
 
 if [[ -n "${pkg_bin}" ]]; then
 
