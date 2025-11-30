@@ -10,20 +10,26 @@ print_help() {
                                    [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -r, --version                  desired version of helix"
+  echo "       -r, --version                  desired version"
+  echo "       -t, --target                   desired target"
+  echo "       -o, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
   echo "       -u, --user                     alternative user"
+  echo "       -e, --set-editor               set editor"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=0
-NUM_OPT_ARGS=5
-NUM_OPT_FLAGS=1
-NUM_EXT_ARGS_MAX=0
+readonly NUM_POS_ARGS=0
+readonly NUM_OPT_ARGS=7
+readonly NUM_OPT_FLAGS=1
+readonly NUM_EXT_ARGS_MAX=0
+
+target=$(uname -m)
+os=$(uname)
 
 # runtime
 path_this_script=${0}
@@ -50,6 +56,8 @@ fi
 # args optional - defaults
 download_pkgs=false
 version='latest'
+target=${target,,}
+os=${os,,}
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -64,6 +72,14 @@ while (($# > 0)); do
       ;;
     -r | --version)
       version=${2}
+      shift 2
+      ;;
+    -t | --target)
+      target=${2}
+      shift 2
+      ;;
+    -o | --os)
+      os=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -81,6 +97,10 @@ while (($# > 0)); do
     -u | --user)
       user=${2}
       shift 2
+      ;;
+    -e | --set-editor)
+      set_editor=true
+      shift 1
       ;;
     -*)
       echo "[error] ${1} is an invalid option"
@@ -164,6 +184,74 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
+case "${os}" in
+  windows)
+    case "${target}" in
+      x86)
+        err "not available"
+        target_text='win32'
+        ;;
+      x86_64)
+        target_text='win64'
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        target_text='woa64'
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    compression_file_extension=''
+    err "not supported in script"
+    ;;
+  darwin)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        err "not available"
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        target_text='macOS-ARM64'
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    compression_file_extension='tar.xz'
+    ;;
+  linux)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        target_text='Linux-X64'
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        target_text='LinuxARM64'
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    compression_file_extension='tar.xz'
+    ;;
+  *)
+    err "not supported"
+    ;;
+esac
+
 url_github_base="https://github.com/llvm/llvm-project/releases"
 url_github_latest="${url_github_base}/latest"
 
@@ -187,16 +275,28 @@ if [[ $version =~ $regex_get_version_numberals ]]; then
 fi
 
 url_github_version="${url_github_base}/download/${version}"
+pkg_name="LLVM"
+pkg_bin=""
+pkg_filename="${pkg_name}-${version_numerals}-${target_text}"
+pkg_archive="${pkg_filename}.${compression_file_extension}"
 
-wget -nc -P "${dir_downloads}" "${url_github_version}/LLVM-${version_numerals}-Linux-X64.tar.xz"
-rm -rf "${dir_apps:?}/llvm"
-mkdir -p "${dir_apps}/llvm"
-tar -xvf "${dir_downloads}/LLVM-${version_numerals}-Linux-X64.tar.xz" --directory="${dir_apps}/llvm/"
+wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
+mkdir -p "${dir_apps}/${pkg_name,,}"
+rm -rf "${dir_apps:?}/${pkg_name,,}/${pkg_filename}"
+tar -xvf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name,,}/"
 
-apps=$(ls "${dir_apps}/llvm/LLVM-${version_numerals}-Linux-X64/bin/")
+if [[ -n "${pkg_bin}" ]]; then
 
-# ln -s ${dir_apps}/llvm/LLVM-${version_numerals}-Linux-X64/bin/* ${dir_bin}/
-for app in ${apps}; do
-  rm -f "${dir_bin}/${app}"
-  ln -s "${dir_apps}/llvm/LLVM-${version_numerals}-Linux-X64/bin/${app}" "${dir_bin}/${app}"
-done
+  rm -f "${dir_bin}/${pkg_bin}"
+  ln -s "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/${pkg_bin}" "${dir_bin}/${app}"
+
+else
+
+  apps=$(ls "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/")
+
+  for app in ${apps}; do
+    rm -f "${dir_bin}/${app}"
+    ln -s "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/${app}" "${dir_bin}/${app}"
+  done
+
+fi

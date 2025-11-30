@@ -223,6 +223,8 @@ case "${os}" in
     ;;
 esac
 
+github_root='helix-editor'
+github_repo='helix'
 url_github_base="https://github.com/helix-editor/helix/releases"
 url_github_latest="${url_github_base}/latest"
 

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 set -e
 
 print_help() {
@@ -9,10 +7,12 @@ print_help() {
   echo "==================================================================================="
   echo "[help] ${path_this_script} [-p | --download-pkgs] [-r | --version]
                                    [-d | --dir_downloads] [-a | --dir_apps]
-                                   [-n | --dir_bin] [-u | --user]"
+                                   [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -r, --version                  desired version of helix"
+  echo "       -r, --version                  desired version"
+  echo "       -t, --target                   desired target"
+  echo "       -o, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
@@ -24,9 +24,12 @@ print_help() {
 
 # constants
 readonly NUM_POS_ARGS=0
-readonly NUM_OPT_ARGS=5
-readonly NUM_OPT_FLAGS=2
+readonly NUM_OPT_ARGS=7
+readonly NUM_OPT_FLAGS=1
 readonly NUM_EXT_ARGS_MAX=0
+
+target=$(uname -m)
+os=$(uname)
 
 # runtime
 path_this_script=${0}
@@ -36,6 +39,8 @@ if [ -f "${path_this_script}" ]; then
     pwd -P
   )"
 fi
+
+source "${dir_this_script}/common.sh"
 
 # help
 if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
@@ -52,7 +57,9 @@ fi
 
 # args optional - defaults
 download_pkgs=false
-version_target='latest'
+version='latest'
+target=${target,,}
+os=${os,,}
 dir_downloads=""
 dir_apps=""
 dir_bin=""
@@ -67,6 +74,14 @@ while (($# > 0)); do
       ;;
     -r | --version)
       version=${2}
+      shift 2
+      ;;
+    -t | --target)
+      target=${2}
+      shift 2
+      ;;
+    -o | --os)
+      os=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -119,7 +134,6 @@ else
   done
 fi
 
-# business
 # set defaults
 dir_home="/home/${user}"
 
@@ -171,90 +185,123 @@ if [ ! -d "${dir_bin}" ]; then
   exit 1
 fi
 
-# shellcheck disable=SC2016
-LINE='. "${HOME}/.bashrc_ext"'
-FILE="${HOME}/.bashrc"
-grep -qxF -- "${LINE}" "${FILE}" || echo "${LINE}" >>"${FILE}"
-unset -v LINE FILE
+# business
+case "${os}" in
+  windows)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        err "not available"
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        err "not available"
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    pkg_compression=''
+    err "not supported in script"
+    ;;
+  darwin)
+    case "${target}" in
+      x86)
+        target_text='macos-universal'
+        ;;
+      x86_64)
+        target_text='macos-universal'
+        ;;
+      aarch32)
+        target_text='macos-universal'
+        ;;
+      aarch64)
+        target_text='macos-universal'
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    pkg_compression='tar.gz'
+    ;;
+  linux)
+    case "${target}" in
+      x86)
+        err "not available"
+        ;;
+      x86_64)
+        target_text='linux-x86_64'
+        ;;
+      aarch32)
+        err "not available"
+        ;;
+      aarch64)
+        target_text='linux-aarch64'
+        ;;
+      *)
+        err "not available"
+        ;;
+    esac
+    pkg_compression='tar.gz'
+    ;;
+  *)
+    err "not supported"
+    ;;
+esac
 
-# shfmt
-pkg_name="shfmt"
-pkg_executable="${pkg_name}"
-url_github_base="https://github.com/patrickvane/${pkg_name}/releases"
-url_github_latest="${url_github_base}/latest"
+github_root='Kitware'
+github_repo='CMake'
+github_base_url="https://github.com/${github_root}/${github_repo}/releases"
+github_latest_url="${github_base_url}/latest"
 
-if [ "${version_target}" == 'latest' ]; then
-  latest_url_header=$(curl --head "${url_github_latest}" | grep location)
-  echo "[info] github latest ${latest_url_header}"
-  regex_get_version="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
-  if [[ $latest_url_header =~ $regex_get_version ]]; then
+if [ "${version}" == 'latest' ]; then
+  latest_release_url_header=$(curl --head "${github_latest_url}" | grep location)
+  regex_get_release="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
+  if [[ $latest_release_url_header =~ $regex_get_release ]]; then
     version="${BASH_REMATCH[1]}"
     echo "[info] using the latest verion: $version"
   else
     echo "[error] failed to get latest version."
     exit 1
   fi
-else
-  version="${version_target}"
+
 fi
 
-pkg_filename="${pkg_name}_linux_amd64"
-pkg_archive=''
-url_github_version="${url_github_base}/download/${version}"
-
-mkdir -p "${dir_apps:?}/${pkg_name}"
-
-if [[ "${pkg_archive}" == '' ]]; then
-  wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_filename}"
-  rm -rf "${dir_apps:?}/${pkg_name:?}/${pkg_filename:?}"
-  cp "${dir_downloads}/${pkg_filename}" "${dir_apps}/${pkg_name}/${pkg_executable}"
-
-  rm -f "${dir_bin}/${pkg_executable}"
-  chmod +x "${dir_apps}/${pkg_name}/${pkg_executable}"
-  ln -s "${dir_apps}/${pkg_name}/${pkg_executable}" "${dir_bin}/${pkg_executable}"
-else
-  wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
-  rm -rf "${dir_apps:?}/${pkg_name:?}/${pkg_filename:?}"
-  tar -xvf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
-
-  rm -f "${dir_bin}/${pkg_executable}"
-  chmod +x "${dir_apps}/${pkg_name}/${pkg_filename}/${pkg_executable}"
-  ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/${pkg_executable}" "${dir_bin}/${pkg_executable}"
+regex_get_version="^v([0-9.-]+)\s*$"
+if [[ $version =~ $regex_get_version ]]; then
+  version_numerals="${BASH_REMATCH[1]}"
+  echo "[info] version numerals: $version_numerals"
 fi
 
-# shchk
-pkg_name="shellcheck"
-pkg_executable="${pkg_name}"
-url_github_base="https://github.com/koalaman/${pkg_name}/releases"
-url_github_latest="${url_github_base}/latest"
+github_version_url="${github_base_url}/download/${version}"
+pkg_name="cmake"
+pkg_bin=""
+pkg_filename="${pkg_name}-${version_numerals}-${target_text}"
+pkg_archive="${pkg_filename}.${pkg_compression}"
 
-if [ "${version_target}" == 'latest' ]; then
-  latest_url_header=$(curl --head "${url_github_latest}" | grep location)
-  echo "[info] github latest ${latest_url_header}"
-  regex_get_version="^location:.+/tag/([0-9a-zA-Z.-]+)\s*$"
-  if [[ $latest_url_header =~ $regex_get_version ]]; then
-    version="${BASH_REMATCH[1]}"
-    echo "[info] using the latest verion: $version"
-  else
-    echo "[error] failed to get latest version."
-    exit 1
-  fi
-else
-  version="${version_target}"
-fi
-
-pkg_filename="${pkg_name}-${version}.linux.x86_64"
-pkg_archive="${pkg_filename}.tar.xz"
-url_github_version="${url_github_base}/download/${version}"
-
-wget -nc -P "${dir_downloads}" "${url_github_version}/${pkg_archive}"
+wget -nc -P "${dir_downloads}" "${github_version_url}/${pkg_archive}"
+rm -rf "${dir_apps:?}/${pkg_name:?}"
 mkdir -p "${dir_apps}/${pkg_name}"
-rm -rf "${dir_apps:?}/${pkg_name:?}/${pkg_filename:?}"
-tar -xvf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/" --one-top-level --strip-components=1
+tar -xvzf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
 
-rm -f "${dir_bin}/${pkg_executable}"
-ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/${pkg_executable}" "${dir_bin}/${pkg_executable}"
+apps=$(ls "${dir_apps}/${pkg_name}/${pkg_filename}/bin/")
 
-sudo npm install -g bash-language-server
+if [[ -n "${pkg_bin}" ]]; then
 
-echo "[info] success"
+  rm -f "${dir_bin}/${pkg_bin}"
+  ln -s "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/${pkg_bin}" "${dir_bin}/${app}"
+
+else
+
+  apps=$(ls "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/")
+
+  for app in ${apps}; do
+    rm -f "${dir_bin}/${app}"
+    ln -s "${dir_apps}/${pkg_name,,}/${pkg_filename}/bin/${app}" "${dir_bin}/${app}"
+  done
+
+fi
