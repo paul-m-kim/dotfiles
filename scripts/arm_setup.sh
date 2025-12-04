@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 print_help() {
@@ -10,20 +12,26 @@ print_help() {
                                    [-b | --dir_bin] <user>"
   echo ""
   echo "       -p, --download_pkgs            download and install any missing pkgs"
-  echo "       -r, --version                  desired version of helix"
+  echo "       -r, --version                  desired version"
+  echo "       -t, --target                   desired target"
+  echo "       -o, --os                       desired os"
   echo "       -d, --dir_downloads            alternative downloads directory"
   echo "       -a, --dir_apps                 alternative apps directory"
   echo "       -b, --dir_bin                  alternative bin directory"
   echo "       -u, --user                     alternative user"
+  echo "       -l, --toolchain                arm toolchain (gcc?/gnu?)"
   echo "==================================================================================="
 
 }
 
 # constants
-NUM_POS_ARGS=0
-NUM_OPT_ARGS=5
-NUM_OPT_FLAGS=1
-NUM_EXT_ARGS_MAX=0
+readonly NUM_POS_ARGS=0
+readonly NUM_OPT_ARGS=8
+readonly NUM_OPT_FLAGS=1
+readonly NUM_EXT_ARGS_MAX=0
+
+os_target=$(uname -m)
+os=$(uname)
 
 # runtime
 path_this_script=${0}
@@ -33,6 +41,8 @@ if [ -f "${path_this_script}" ]; then
     pwd -P
   )"
 fi
+
+source "${dir_this_script}/common.sh"
 
 # help
 if [[ "${1}" == "-h" ]] || [[ "${1}" == "--help" ]]; then
@@ -49,11 +59,14 @@ fi
 
 # args optional - defaults
 download_pkgs=false
-version='latest'
+release=''
+os_target=${os_target,,}
+os=${os,,}
 dir_downloads=""
 dir_apps=""
 dir_bin=""
 user="${USER}"
+arm_toolchain='arm-gcc'
 
 # args optional
 while (($# > 0)); do
@@ -63,7 +76,15 @@ while (($# > 0)); do
       shift 1
       ;;
     -r | --version)
-      version=${2}
+      release=${2}
+      shift 2
+      ;;
+    -t | --target)
+      os_target=${2}
+      shift 2
+      ;;
+    -o | --os)
+      os=${2}
       shift 2
       ;;
     -d | --dir_downloads)
@@ -80,6 +101,10 @@ while (($# > 0)); do
       ;;
     -u | --user)
       user=${2}
+      shift 2
+      ;;
+    -l | --toolchain)
+      arm_toolchain=${2}
       shift 2
       ;;
     -*)
@@ -164,24 +189,277 @@ if [ ! -d "${dir_bin}" ]; then
 fi
 
 # business
-version_numerals="10.3-2021.10"
+if [ -z "${release}" ]; then
+  err "release needs to be specified."
+else
+  version="${release}"
+fi
 
-url_download_base="https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm"
-url_download_version="${url_download_base}/${version_numerals}"
+# supported targets:
+# - arm-gcc (prefix='gcc-arm-none-eabi')
+#   -  win32
+#   -  x86_64-linux
+#   -  aarch64-linux
+#   -  mac
+# - arm-gnu (prefix='arm-gnu-toolchain')
+#   -  windows x86 (mingw-w64-i686)
+#      -  arm-none-eabi
+#      -  arm-none-linux-gnueabihf
+#      -  aarch64-none-elf
+#      -  aarch64-none-linux-gnu
+#   -  windows x86_64 (mingw-w64-x86_64)
+#      -  arm-none-eabi
+#      -  arm-none-linux-gnueabihf
+#      -  aarch64-none-elf
+#      -  aarch64-none-linux-gnu
+#   -  linux x86_64 (x86_64)
+#      -  arm-none-eabi
+#      -  arm-none-linux-gnueabihf
+#      -  aarch64-none-elf
+#      -  aarch64-none-linux-gnu
+#      -  aarch64_be-none-linux-gnu
+#   -  linux aarch64 (aarch64)
+#      -  arm-none-eabi
+#      -  arm-none-linux-gnueabihf
+#      -  aarch64-none-elf
+#      -  aarch64-none-linux-gnu
+#   -  darwin aarch64 (darwin-arm64)
+#      -  arm-none-eabi
+#      -  aarch64-none-elf
 
-pkg_name="arm"
-pkg_filename="gcc-arm-none-eabi-${version_numerals}"
-pkg_archive_name="${pkg_filename}-x86_64-linux"
+target_text=''
+arm_toolchain='arm_gcc'
+arm_target='arm-none-eabi'
 
-wget -nc -P "${dir_downloads}/" "${url_download_version}/${pkg_archive_name}.tar.bz2"
+case "${arm_toolchain}" in
+  arm_gcc)
+    case "${os}" in
+      windows)
+        case "${os_target}" in
+          x86)
+            target_text="win32"
+            ;;
+          *)
+            err "not available"
+            ;;
+        esac
+        pkg_compression='zip'
+        err "not supported in script"
+        ;;
+      darwin)
+        case "${os_target}" in
+          *)
+            target_text="mac"
+            ;;
+        esac
+        pkg_compression='tar.bz2'
+        ;;
+      linux)
+        case "${os_target}" in
+          x86_64)
+            target_text="x86_64-linux"
+            ;;
+          aarch64)
+            target_text="aarch64-linux"
+            ;;
+          *)
+            err "not available"
+            ;;
+        esac
+        pkg_compression='tar.bz2'
+        ;;
+      *)
+        err "not supported"
+        ;;
+    esac
+    ;;
+  arm_gnu)
+    case "${os}" in
+      windows)
+        pkg_compression='zip'
+        case "${os_target}" in
+          x86)
+            case "${arm_target}" in
+              arm-none-eabi)
+                target_text="mingw-w64-i686-${arm_target}"
+                ;;
+              arm-none-linux-gnueabihf)
+                target_text="mingw-w64-i686-${arm_target}"
+                ;;
+              aarch64-none-elf)
+                target_text="mingw-w64-i686-${arm_target}"
+                ;;
+              aarch64-none-linux-gnu)
+                target_text="mingw-w64-i686-${arm_target}"
+                ;;
+              *)
+                err "not supported arm target."
+                ;;
+            esac
+            ;;
+          x86_64)
+            case "${arm_target}" in
+              arm-none-eabi)
+                target_text="mingw-w64-x86_64-${arm_target}"
+                ;;
+              arm-none-linux-gnueabihf)
+                target_text="mingw-w64-x86_64-${arm_target}"
+                ;;
+              aarch64-none-elf)
+                target_text="mingw-w64-x86_64-${arm_target}"
+                ;;
+              aarch64-none-linux-gnu)
+                target_text="mingw-w64-x86_64-${arm_target}"
+                ;;
+              *)
+                err "not supported arm target."
+                ;;
+            esac
+            ;;
+          *)
+            err "not available"
+            ;;
+        esac
+        err "not supported in script"
+        ;;
+      darwin)
+        pkg_compression='tar.xz'
+        case "${os_target}" in
+          aarch64)
+            case "${arm_target}" in
+              arm-none-eabi)
+                target_text="darwin-arm64-${arm_target}"
+                ;;
+              aarch64-none-elf)
+                target_text="darwin-arm64-${arm_target}"
+                ;;
+              *)
+                err "not supported arm target."
+                ;;
+            esac
+            ;;
+          *)
+            err "not available"
+            ;;
+        esac
+        ;;
+      linux)
+        pkg_compression='tar.xz'
+        case "${os_target}" in
+          x86_64)
+            case "${arm_target}" in
+              arm-none-eabi)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              arm-none-linux-gnueabihf)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              aarch64-none-elf)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              aarch64-none-linux-gnu)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              aarch64_be-none-linux-gnu)
+                command ...
+                ;;
+              *)
+                err "not supported arm target."
+                ;;
+            esac
+            ;;
+          aarch64)
+            case "${arm_target}" in
+              arm-none-eabi)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              arm-none-linux-gnueabihf)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              aarch64-none-elf)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              aarch64-none-linux-gnu)
+                target_text="${os_target}-${arm_target}"
+                ;;
+              *)
+                err "not supported arm target."
+                ;;
+            esac
+            ;;
+          *)
+            err "not available"
+            ;;
+        esac
+        ;;
+      *)
+        err "not supported"
+        ;;
+    esac
+    ;;
+  *)
+    err "not supported arm toolchain"
+    ;;
+esac
+
+case "${arm_toolchain}" in
+  arm_gcc)
+    arm_developer_base_url="https://developer.arm.com/-/media/files/downloads/gnu-rm/"
+    arm_version_url="${arm_developer_base_url}/${version}"
+    pkg_name="gcc-arm-none-eabi"
+    ;;
+  arm_gnu)
+    arm_developer_base_url="https://developer.arm.com/-/media/files/downloads/gnu/"
+    arm_version_url="${arm_developer_base_url}/${version}/binrel"
+    pkg_name="arm-gnu-toolchain"
+    ;;
+  *)
+    command ...
+    ;;
+esac
+
+pkg_bin=""
+
+pkg_filename_has_version=true
+if [ "${pkg_filename_has_version}" = true ]; then
+  pkg_filename="${pkg_name}-${version}-${target_text}"
+else
+  pkg_filename="${pkg_name}-${target_text}"
+fi
+pkg_archive="${pkg_filename}.${pkg_compression}"
+pkg_content="${pkg_name}-${version}"
+
+wget -nc -P "${dir_downloads}" "${arm_version_url}/${pkg_archive}"
 rm -rf "${dir_apps:?}/${pkg_name:?}"
 mkdir -p "${dir_apps}/${pkg_name}"
-tar -C "${dir_apps}/${pkg_name}" -xvf "${dir_downloads}/${pkg_archive_name}.tar.bz2"
 
-# ln -s "${dir_apps}/${pkg_filename}/bin/*" "${dir_bin}/"
-apps=$(ls "${dir_apps}/${pkg_name}/${pkg_filename}/bin/")
+case "${pkg_compression}" in
+  'zip')
+    unzip -u "${dir_downloads}/${pkg_archive}" -d "${dir_apps}/${pkg_name}"
+    ;;
+  'tar.xz' | 'tar.gz')
+    tar -xvzf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
+    ;;
+  tar.bz2)
+    tar -xvjf "${dir_downloads}/${pkg_archive}" --directory="${dir_apps}/${pkg_name}/"
+    ;;
+  *)
+    err "unsupported compression."
+    ;;
+esac
 
-for app in ${apps}; do
-  rm -f "${dir_bin}/${app}"
-  ln -s "${dir_apps}/${pkg_name}/${pkg_filename}/bin/${app}" "${dir_bin}/${app}"
-done
+if [[ -n "${pkg_bin}" ]]; then
+
+  rm -f "${dir_bin}/${pkg_bin}"
+  ln -s "${dir_apps}/${pkg_name,,}/${pkg_content}/${pkg_bin}" "${dir_bin}/${app}"
+
+else
+
+  apps=$(ls "${dir_apps}/${pkg_name,,}/${pkg_content}/bin/")
+
+  for app in ${apps}; do
+    rm -f "${dir_bin}/${app}"
+    ln -s "${dir_apps}/${pkg_name,,}/${pkg_content}/bin/${app}" "${dir_bin}/${app}"
+  done
+
+fi
