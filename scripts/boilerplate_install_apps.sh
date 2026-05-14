@@ -138,15 +138,15 @@ fi
 # set defaults
 dir_home="/home/${user}"
 
-if [ "${dir_downloads}" == "" ]; then
+if [ -z "${dir_downloads}" ]; then
   dir_downloads=${dir_home}/downloads
 fi
 
-if [ "${dir_apps}" == "" ]; then
+if [ -z "${dir_apps}" ]; then
   dir_apps=${dir_home}/apps
 fi
 
-if [ "${dir_bin}" == "" ]; then
+if [ -z "${dir_bin}" ]; then
   dir_bin=${dir_home}/bin
 fi
 
@@ -156,7 +156,7 @@ if [ "$EUID" -eq 0 ] && [ "$user" == "root" ]; then
   exit 1
 fi
 
-if [[ "${user}" == "" ]]; then
+if [ -z "${user}" ]; then
   echo "[error] empty username"
   exit 1
 fi
